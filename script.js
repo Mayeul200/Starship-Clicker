@@ -1,6 +1,6 @@
 // ============================================
 // STARSHIP CLICKER - MAIN SCRIPT
-// Version 2.0.0
+// Version 2.1.0
 // ============================================
 
 // ============================================
@@ -25,10 +25,12 @@ function hideTooltip() {
 // ============================================
 // GLOBAL CONSTANTS
 // ============================================
-const BUILDING_PRICE_GROWTH_RATE = 0.12;
+// Croissance du prix d'un même bâtiment à l'achat : ×1.15 par bâtiment possédé
+// (identique à Cookie Clicker — le prix double tous les ~5 achats).
+const BUILDING_PRICE_GROWTH_RATE = 1.15;
 const GAME_LOOP_FPS = 10;
 const GAME_LOOP_INTERVAL_MS = 100;
-const BONUS_SPAWN_INTERVAL_MS = 5000;
+const BONUS_SPAWN_INTERVAL_MS = 5000; // TEST: comètes toutes les 5s (normalement 20000)
 const SAVE_INTERVAL_MS = 30000;
 const TOAST_DURATION_MS = 3000;
 const MAX_BUILDING_DISPLAY = 100;
@@ -44,37 +46,71 @@ const SPACE_UPDATE_INTERVAL_MS = 500;
 // ROCKET_PARTS avec tailles proportionnelles
 // Hauteur totale: 454px (centrée verticalement)
 // ============================================
-const ROCKET_PARTS = [
-    { id: "workshop", name: "Atelier", description: "Fabrique des pieces: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 10, gain: 0.1, count: 0, image: "\ud83d\udee0\ufe0f", imgPath: "images/rocket/workshop.png", x: 20, y: 555, width: 220, height: 220, order: 1, unlockCondition: () => true, totalGenerated: 0 },
-    { id: "nozzles", name: "Tuyères", description: "Propulsion: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 100, gain: 1, count: 0, image: "\ud83c\udfaf", imgPath: "images/rocket/nozzles.PNG", x: 50, y: 646, width: 40, height: 20, order: 2, unlockCondition: () => score >= 50, totalGenerated: 0 },
-    { id: "engines", name: "Moteurs", description: "Moteurs principaux: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 1000, gain: 10, count: 0, image: "\ud83d\udd25", imgPath: "images/rocket/engines.png", x: 50, y: 595, width: 40, height: 51, order: 3, unlockCondition: () => score >= 500, totalGenerated: 0 },
-    { id: "fuel-tank", name: "Réservoir", description: "Carburant: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 10000, gain: 100, count: 0, image: "\u26fd", imgPath: "images/rocket/fuel-tank.png", x: 50, y: 537, width: 40, height: 58, order: 4, unlockCondition: () => score >= 5000, totalGenerated: 0 },
-    { id: "rocket-body", name: "Corps", description: "Structure: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 100000, gain: 1000, count: 0, image: "\ud83d\udfeb", imgPath: "images/rocket/body.png", x: 50, y: 337, width: 40, height: 200, order: 5, unlockCondition: () => score >= 25000, totalGenerated: 0 },
-    { id: "boosters-left", name: "Boosters Gauche", description: "Propulsion supplémentaire: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 1000000, gain: 10000, count: 0, image: "🚀", imgPath: "images/rocket/boosters-left.png", x: 45.8, y: 373, width: 50, height: 300, order: 6, unlockCondition: () => score >= 100000, totalGenerated: 0 },
-    { id: "boosters-right", name: "Boosters Droit", description: "Propulsion supplémentaire: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 1000000, gain: 10000, count: 0, image: "🚀", imgPath: "images/rocket/boosters-right.png", x: 54.2, y: 373, width: 50, height: 300, order: 6, unlockCondition: () => score >= 100000, totalGenerated: 0 },
-    { id: "cockpit", name: "Cockpit", description: "Poste de pilotage: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 10000000, gain: 100000, count: 0, image: "\ud83d\udc68\u200d🚀", imgPath: "images/rocket/cockpit.png", x: 50, y: 292, width: 45, height: 45, order: 7, unlockCondition: () => score >= 1000000, totalGenerated: 0 },
-    { id: "shield", name: "Bouclier", description: "Protection: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 100000000, gain: 1000000, count: 0, image: "\ud83d\udee1\ufe0f", imgPath: "images/rocket/shield.png", x: 50, y: 233, width: 45, height: 59, order: 8, unlockCondition: () => score >= 10000000, totalGenerated: 0 },
-    { id: "launch-pad", name: "Pas de tir", description: "Lancement: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 1000000000, gain: 10000000, count: 0, image: "🚀", imgPath: "images/rocket/launch-pad.png",x: 60.2, y: 205, width: 190, height: 481, order: 9, unlockCondition: () => score >= 100000000, totalGenerated: 0 },
-    { id: "astronaut", name: "Astronaute", description: "Pilote: +{gain} Parts/s\n% de la production: {percent}%\nTotal genere: {total} Parts", baseCost: 10000000000, gain: 100000000, count: 0, image: "\ud83d\udc69\u200d🚀", imgPath: "images/rocket/astronaut.png", x: 40, y: 635, width: 25, height: 60, order: 10, unlockCondition: () => score >= 1000000000, totalGenerated: 0 },
+// ============================================
+// BÂTIMENTS DE PRODUCTION
+// Achetables en masse, génèrent des Parts/s. Boucle clicker.
+// ============================================
+const PRODUCTION_BUILDINGS = [
+    { id: "workshop",      name: "Atelier",                  description: "Fabrique des pièces: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 15,            gain: 0.1,      count: 0, image: "🛠️", imgPath: "images/rocket/workshop.png",  unlockCondition: () => true,            totalGenerated: 0 },
+    { id: "factory",       name: "Usine",                    description: "Production de masse: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 100,           gain: 1,         count: 0, image: "🏭",       unlockCondition: () => score >= 50,       totalGenerated: 0 },
+    { id: "mine",          name: "Mine stellaire",           description: "Extraction de minerai: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1100,          gain: 8,        count: 0, image: "⛏️",       unlockCondition: () => score >= 500,      totalGenerated: 0 },
+    { id: "solar",         name: "Centrale solaire",         description: "Énergie: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 12000,         gain: 47,       count: 0, image: "☀️",       unlockCondition: () => score >= 6000,     totalGenerated: 0 },
+    { id: "lab",           name: "Laboratoire",              description: "Recherche: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 130000,        gain: 260,      count: 0, image: "🧪",       unlockCondition: () => score >= 65000,    totalGenerated: 0 },
+    { id: "foundry",       name: "Fonderie orbitale",        description: "Raffinage: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1400000,       gain: 1400,     count: 0, image: "🔥",       unlockCondition: () => score >= 700000,   totalGenerated: 0 },
+    { id: "station",       name: "Station spatiale",         description: "Logistique: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 20000000,      gain: 7800,    count: 0, image: "🚀",       unlockCondition: () => score >= 10000000, totalGenerated: 0 },
+    { id: "nanoforge",     name: "Nanoforge",                description: "Fabrication avancée: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 330000000,     gain: 44000,   count: 0, image: "⚙️",       unlockCondition: () => score >= 150000000, totalGenerated: 0 },
+    { id: "synth",         name: "Synthétiseur de matière",  description: "Matière exotique: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 5100000000,    gain: 260000,  count: 0, image: "✨",       unlockCondition: () => score >= 2500000000, totalGenerated: 0 },
+    { id: "antimatter",   name: "Collecteur d'antimatière",  description: "Ressource ultime: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 75000000000,   gain: 1600000, count: 0, image: "🌀",       unlockCondition: () => score >= 35000000000, totalGenerated: 0 },
+    { id: "voidrig",       name: "Foreuse du vide",           description: "Forage du vide: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1e12,          gain: 10000000.0,      count: 0, image: "⛏️",       unlockCondition: () => score >= 5e11,       totalGenerated: 0 },
+    { id: "quasar",        name: "Moteur à quasar",           description: "Énergie de quasar: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1.4e13,        gain: 65000000.0,    count: 0, image: "💫",       unlockCondition: () => score >= 7.5e12,    totalGenerated: 0 },
+    { id: "nebula",        name: "Raffinerie de nébuleuse",   description: "Raffinage de nébuleuse: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1.7e14,          gain: 430000000.0,      count: 0, image: "🌌",       unlockCondition: () => score >= 1e14,      totalGenerated: 0 },
+    { id: "pulsar",        name: "Moulure à pulsar",          description: "Moulure à pulsar: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 2.1e15,          gain: 2900000000.0,      count: 0, image: "⭐",       unlockCondition: () => score >= 1.5e15,    totalGenerated: 0 },
+    { id: "blackhole",     name: "Trous noir industriel",     description: "Trous noir industriel: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 2.6e16,          gain: 21000000000.0,      count: 0, image: "🕳️",       unlockCondition: () => score >= 2.5e16,    totalGenerated: 0 },
+    { id: "darkmatter",    name: "Extracteur de matière sombre", description: "Matière sombre: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 3.1e17,          gain: 150000000000.0,      count: 0, image: "🌑",       unlockCondition: () => score >= 4e17,      totalGenerated: 0 },
+    { id: "wormhole",      name: "Usine à trou de ver",       description: "Trou de ver: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 7.1e18,        gain: 1.1e12,    count: 0, image: "🌀",       unlockCondition: () => score >= 6e18,      totalGenerated: 0 },
+    { id: "supernova",     name: "Réacteur à supernova",      description: "Supernova: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1.2e20,          gain: 8.3e12,      count: 0, image: "🌟",       unlockCondition: () => score >= 1e20,      totalGenerated: 0 },
+    { id: "bigbang",       name: "Forge cosmique",           description: "Forge cosmique: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 1.9e21,          gain: 6.4e13,      count: 0, image: "💥",       unlockCondition: () => score >= 1.5e21,    totalGenerated: 0 },
+    { id: "singularity",   name: "Singularité productive",    description: "Singularité: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", baseCost: 5.4e23,          gain: 5.1e14,      count: 0, image: "🔮",       unlockCondition: () => score >= 2.5e22,    totalGenerated: 0 }
 ];
 
-// Alias pour compatibilité
-const BUILDINGS = ROCKET_PARTS;
+// Bâtiments de production = liste utilisée par la boucle clicker (achat en masse, gain Parts/s)
+const BUILDINGS = PRODUCTION_BUILDINGS;
+
+// ============================================
+// PIÈCES DE FUSÉE
+// Achats uniques par run (payés en Parts). Compléter les 10 = lancement.
+// ============================================
+const ROCKET_PARTS = [
+    { id: "nozzles",       name: "Tuyères",        description: "Propulsion: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 50,           image: "🎯",       imgPath: "images/rocket/nozzles.PNG",       x: 50,    y: 646, width: 40,  height: 20,  order: 2,  purchased: false },
+    { id: "engines",       name: "Moteurs",        description: "Moteurs principaux: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 150,          image: "🔥",       imgPath: "images/rocket/engines.png",       x: 50,    y: 595, width: 40,  height: 51,  order: 3,  purchased: false },
+    { id: "fuel-tank",     name: "Réservoir",     description: "Carburant: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 450,          image: "⛽",       imgPath: "images/rocket/fuel-tank.png",     x: 50,    y: 537, width: 40,  height: 58,  order: 4,  purchased: false },
+    { id: "rocket-body",   name: "Corps",          description: "Structure: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 1300,         image: "🏭",       imgPath: "images/rocket/body.png",          x: 50,    y: 337, width: 40,  height: 200, order: 5,  purchased: false },
+    { id: "boosters-left", name: "Boosters Gauche", description: "Propulsion supplémentaire: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 3800,         image: "🚀",       imgPath: "images/rocket/boosters-left.png", x: 45.8,  y: 373, width: 50,  height: 300, order: 6,  purchased: false },
+    { id: "boosters-right",name: "Boosters Droit",  description: "Propulsion supplémentaire: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 11000,        image: "🚀",       imgPath: "images/rocket/boosters-right.png",x: 54.2,  y: 373, width: 50,  height: 300, order: 6,  purchased: false },
+    { id: "cockpit",       name: "Cockpit",        description: "Poste de pilotage: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 32000,        image: "👨‍🚀", imgPath: "images/rocket/cockpit.png",        x: 50,    y: 292, width: 45,  height: 45,  order: 7,  purchased: false },
+    { id: "shield",        name: "Bouclier",       description: "Protection: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 93000,        image: "🛡️",       imgPath: "images/rocket/shield.png",        x: 50,    y: 233, width: 45,  height: 59,  order: 8,  purchased: false },
+    { id: "launch-pad",    name: "Pas de tir",     description: "Lancement: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 270000,       image: "🚀",       imgPath: "images/rocket/launch-pad.png",    x: 60.2,  y: 205, width: 190, height: 481, order: 9,  purchased: false },
+    { id: "astronaut",     name: "Astronaute",    description: "Pilote: +{gain} Parts/s\n% de la production: {percent}%\nTotal généré: {total} Parts", cost: 638000,       image: "👩‍🚀", imgPath: "images/rocket/astronaut.png",     x: 40,    y: 635, width: 25,  height: 60,  order: 10, purchased: false }
+];
 
 
 
 
+// Ameliorations de clic inspirees de Cookie Clicker :
+// - Chacune double la valeur de base du clic (x2, comme Reinforced finger / Carpal tunnel).
+// - A partir de la 2e, debloque un bonus par bâtiment possede ( Thousand Fingers).
+// - Les couts suivent l'echelle ~x10 de Cookie Clicker.
 const CLICK_UPGRADES = [
-    { threshold: 50, name: "Basic Launch", cost: 50 },
-    { threshold: 100, name: "Precise Click", cost: 100 },
-    { threshold: 250, name: "Powerful Launch", cost: 250 },
-    { threshold: 500, name: "Expert Engineer", cost: 500 },
-    { threshold: 1000, name: "Rocket Scientist", cost: 1000 },
-    { threshold: 2500, name: "Space Pioneer", cost: 2500 },
-    { threshold: 5000, name: "Galactic Click", cost: 5000 },
-    { threshold: 10000, name: "Cosmic Master", cost: 10000 },
-    { threshold: 25000, name: "Interstellar Power", cost: 25000 },
-    { threshold: 50000, name: "Universal Click", cost: 50000 }
+    { threshold: 50,     name: "Doigt renforcé",        cost: 100 },
+    { threshold: 200,    name: "Précision laser",       cost: 500 },
+    { threshold: 500,    name: "Lancement puissant",   cost: 10000 },
+    { threshold: 1000,   name: "Ingénieur expert",     cost: 50000 },
+    { threshold: 2500,   name: "Scientifique spatial",  cost: 1000000 },
+    { threshold: 5000,   name: "Pionnier galactique",  cost: 5000000 },
+    { threshold: 10000,  name: "Click galactique",     cost: 100000000 },
+    { threshold: 25000, name: "Maître cosmique",      cost: 500000000 },
+    { threshold: 50000,  name: "Puissance interstellaire", cost: 10000000000 },
+    { threshold: 100000, name: "Main de l'univers",   cost: 50000000000 }
 ];
 
 const BUILDING_UPGRADE_THRESHOLDS = [1, 5, 10, 25, 50, 75, 100, 150, 200, 250, 300, 350, 400, 450, 500, 550, 600, 650, 700, 750, 800, 850, 900, 950, 1000];
@@ -89,10 +125,10 @@ const UPGRADE_COLORS = [
 
 const RANDOM_BONUSES = [
     { id: "meteor", symbol: "🌠", name: "Meteor Shower", effect: "instant", type: "meteor", colorClass: "meteor" },
-    { id: "flare", symbol: "☀️", name: "Solar Flare", effect: "multiplier", type: "flare", multiplier: 10, duration: 30000, colorClass: "flare" }
+    { id: "flare", symbol: "☀️", name: "Solar Flare", effect: "multiplier", type: "flare", multiplier: 5, duration: 15000, colorClass: "flare" }
 ];
 
-const SAVE_VERSION = "2.0.0";
+const SAVE_VERSION = "2.2.0";
 
 // ============================================
 // TROPH\u0009ES
@@ -141,6 +177,7 @@ const TROPHIES = [
 // ============================================
 let score = 0;
 let partsPerSecond = 0;
+let partsSinceLaunch = 0;
 let autoMultiplier = 1;
 let clickMultiplier = 1;
 let activeRandomBonuses = [];
@@ -154,6 +191,7 @@ let unlockedBuildings = new Set();
 let totalGeneratedByBuilding = {};
 let lastSaveTime = 0;
 let lastBuildingsUpdate = 0;
+let lastRocketPartsUpdate = 0;
 let lastSpaceProgressUpdate = 0;
 let gameStartTime = 0;
 let buyMultiplier = 1;
@@ -167,6 +205,7 @@ let maxDistance = 0;
 let prestigeMultiplier = 1;
 let rocketsLaunched = 0;
 let lastLaunchDistance = 0;
+let starDust = 0; // Poussière d'Étoiles : monnaie de prestige persistante
 
 
 // ============================================
@@ -191,16 +230,16 @@ let isLaunching = false;
 // ============================================
 const PLANETS = [
     { id: 'earth', name: 'Earth', emoji: '\uD83C\uDF0D', distanceRequired: 0, bonusPercent: 0, color: '#10b981', imgPath: 'images/planets/earth.png' },
-    { id: 'moon', name: 'Moon', emoji: '\uD83D\uDD11', distanceRequired: 384000, bonusPercent: 1, color: '#a9a9a9', imgPath: 'images/planets/moon.png' },
-    { id: 'mars', name: 'Mars', emoji: '\u2642', distanceRequired: 225000000, bonusPercent: 2, color: '#ef4444', imgPath: 'images/planets/mars.png' },
-    { id: 'neptune', name: 'Neptune', emoji: '\u2645', distanceRequired: 4500000000, bonusPercent: 3, color: '#06b6d4', imgPath: 'images/planets/neptune.png' },
-    { id: 'pluto', name: 'Pluto', emoji: '\u2646', distanceRequired: 5900000000, bonusPercent: 5, color: '#8b5cf6', imgPath: 'images/planets/pluto.png' },
-    { id: 'oort-cloud', name: 'Oort Cloud', emoji: '\u2728', distanceRequired: 9461000000000, bonusPercent: 8, color: '#f59e0b', imgPath: 'images/planets/oort-cloud.png' },
-    { id: 'proxima-centauri', name: 'Proxima Centauri', emoji: '\u2609', distanceRequired: 40130000000000, bonusPercent: 12, color: '#10b981', imgPath: 'images/planets/proxima-centauri.png' },
-    { id: 'sirius', name: 'Sirius', emoji: '\u2609', distanceRequired: 81400000000000, bonusPercent: 15, color: '#3b82f6', imgPath: 'images/planets/sirius.png' },
-    { id: 'milky-way-center', name: 'Milky Way Center', emoji: '\uD83C\uDF0C', distanceRequired: 246000000000000, bonusPercent: 20, color: '#fbbf24', imgPath: 'images/planets/milky-way-center.png' },
-    { id: 'andromeda', name: 'Andromeda', emoji: '\uD83C\uDF0C', distanceRequired: 23650000000000000, bonusPercent: 25, color: '#ec4899', imgPath: 'images/planets/andromeda.png' },
-    { id: 'virgo-cluster', name: 'Virgo Cluster', emoji: '\u2728', distanceRequired: 51300000000000000, bonusPercent: 30, color: '#a855f7', imgPath: 'images/planets/virgo-cluster.png' }
+    { id: 'moon', name: 'Moon', emoji: '\uD83D\uDD11', distanceRequired: 384400, bonusPercent: 10, color: '#a9a9a9', imgPath: 'images/planets/moon.png' },
+    { id: 'mars', name: 'Mars', emoji: '\u2642', distanceRequired: 4120000, bonusPercent: 15, color: '#ef4444', imgPath: 'images/planets/mars.png' },
+    { id: 'neptune', name: 'Neptune', emoji: '\u2645', distanceRequired: 47800000, bonusPercent: 20, color: '#06b6d4', imgPath: 'images/planets/neptune.png' },
+    { id: 'pluto', name: 'Pluto', emoji: '\u2646', distanceRequired: 563000000, bonusPercent: 25, color: '#8b5cf6', imgPath: 'images/planets/pluto.png' },
+    { id: 'proxima-centauri', name: 'Proxima Centauri', emoji: '\u2609', distanceRequired: 6100000000, bonusPercent: 30, color: '#10b981', imgPath: 'images/planets/proxima-centauri.png' },
+    { id: 'sirius', name: 'Sirius', emoji: '\u2609', distanceRequired: 72500000000, bonusPercent: 35, color: '#3b82f6', imgPath: 'images/planets/sirius.png' },
+    { id: 'oort-cloud', name: 'Oort Cloud', emoji: '\u2728', distanceRequired: 891000000000, bonusPercent: 40, color: '#f59e0b', imgPath: 'images/planets/oort-cloud.png' },
+    { id: 'milky-way-center', name: 'Milky Way Center', emoji: '\uD83C\uDF0C', distanceRequired: 12800000000000, bonusPercent: 50, color: '#fbbf24', imgPath: 'images/planets/milky-way-center.png' },
+    { id: 'andromeda', name: 'Andromeda', emoji: '\uD83C\uDF0C', distanceRequired: 156000000000000, bonusPercent: 60, color: '#ec4899', imgPath: 'images/planets/andromeda.png' },
+    { id: 'virgo-cluster', name: 'Virgo Cluster', emoji: '\u2728', distanceRequired: 2010000000000000, bonusPercent: 75, color: '#a855f7', imgPath: 'images/planets/virgo-cluster.png' }
 ];
 
 let unlockedPlanets = new Set(['earth']);
@@ -221,16 +260,26 @@ function findBuildingById(buildingId) {
     return BUILDINGS.find(b => b.id === buildingId);
 }
 
+function getPrestigeProductionBoost() {
+    const p = isNaN(prestigeMultiplier) ? 1 : prestigeMultiplier;
+    return p;
+}
+function getPlanetProductionBonus() {
+    return 1 + getTotalPlanetBonus();
+}
+
 function calculateBuildingGain(building) {
     const upgradeMultiplier = getBuildingUpgradeMultiplier(building.id);
-    return building.gain * building.count * autoMultiplier * upgradeMultiplier * getCollectionMultiplier();
+    return building.gain * building.count * autoMultiplier * upgradeMultiplier * getCollectionMultiplier() * getProductionBonus() * getPrestigeProductionBoost() * getPlanetProductionBonus();
 }
 
 function calculateUnitBuildingGain(building) {
     const upgradeMultiplier = getBuildingUpgradeMultiplier(building.id);
-    return building.gain * autoMultiplier * upgradeMultiplier * getCollectionMultiplier();
+    return building.gain * autoMultiplier * upgradeMultiplier * getCollectionMultiplier() * getProductionBonus() * getPrestigeProductionBoost() * getPlanetProductionBonus();
 }
 
+// Chaque upgrade de bâtiment double sa production (×2 par palier),
+// comme les tiered upgrades de Cookie Clicker.
 function getBuildingUpgradeMultiplier(buildingId) {
     const upgrades = buildingUpgrades[buildingId] || [];
     return Math.pow(2, upgrades.length);
@@ -242,10 +291,6 @@ function isBuildingUpgradeAvailable(buildingId, threshold) {
     
     const upgrades = buildingUpgrades[buildingId] || [];
     const thresholdIndex = BUILDING_UPGRADE_THRESHOLDS.indexOf(threshold);
-    
-    if (building.count >= threshold && !buildingUpgradeCosts[buildingId]?.[threshold]) {
-        getBuildingUpgradeFixedCost(buildingId, threshold);
-    }
     
     return building.count >= threshold &&
            !upgrades.includes(threshold) &&
@@ -262,32 +307,31 @@ function getBuildingTooltip(building) {
         .replace('{total}', formatNumber(totalGeneratedByBuilding[building.id] || 0));
 }
 
+// Coût d'un upgrade de bâtiment au palier `threshold` : baseCost × 10^(index du palier)
+// (style Cookie Clicker : chaque palier coûte ~10× le précédent, proportionnel au bâtiment).
+// Déterministe : ne dépend d'aucun état de jeu, donc pas de cache figé.
+const BUILDING_UPGRADE_COST_GROWTH = 10;
+
 function getBuildingUpgradeFixedCost(buildingId, threshold) {
     const building = findBuildingById(buildingId);
     if (!building) return 0;
-    
-    if (buildingUpgradeCosts[buildingId] && buildingUpgradeCosts[buildingId][threshold] !== undefined) {
-        return buildingUpgradeCosts[buildingId][threshold];
-    }
-    
-    const unitGain = building.gain * getBuildingUpgradeMultiplier(building.id);
-    const cost = Math.floor(threshold * unitGain * 5);
-    
-    if (!buildingUpgradeCosts[buildingId]) {
-        buildingUpgradeCosts[buildingId] = {};
-    }
-    buildingUpgradeCosts[buildingId][threshold] = cost;
-    
-    return cost;
+    const tierIndex = BUILDING_UPGRADE_THRESHOLDS.indexOf(threshold);
+    const tier = tierIndex === -1 ? 0 : tierIndex;
+    return Math.floor(building.baseCost * Math.pow(BUILDING_UPGRADE_COST_GROWTH, tier));
 }
 
+// Prix du prochain bâtiment : baseCost × 1.15^(bâtiments possédés)
+// (formule exacte de Cookie Clicker). Pour count=0 le multiplicateur vaut 1.
 function calculateBuildingCost(building) {
-    return building.count === 0
-        ? building.baseCost
-        : Math.floor(building.baseCost * Math.exp(BUILDING_PRICE_GROWTH_RATE * building.count));
+    const reduction = getBuildingCostReduction();
+    return Math.floor(building.baseCost * Math.pow(BUILDING_PRICE_GROWTH_RATE, building.count) * (1 - reduction));
 }
 
 // Fonction de formatage optimisée
+function groupThousands(n) {
+    return Math.round(n).toLocaleString('fr-FR').replace(/[\u202F\u00A0]/g, ' ');
+}
+
 function formatNumber(num, isTotalScore) {
     if (num === 0) return "0";
     
@@ -295,12 +339,15 @@ function formatNumber(num, isTotalScore) {
     
     // Nombres < 1000
     if (absNum < 1000) {
-        return num % 1 === 0 ? Math.round(num).toLocaleString() : num.toFixed(1).toLocaleString();
+        return num % 1 === 0 ? Math.round(num).toString() : num.toFixed(1);
     }
     
     // Nombres entre 1000 et 999999
     if (absNum < 1000000) {
-        return num % 1 === 0 ? Math.round(num).toLocaleString() : num.toFixed(1).toLocaleString();
+        if (num % 1 === 0) return groupThousands(num);
+        const intPart = Math.floor(num);
+        const decPart = (num - intPart).toFixed(1).slice(2);
+        return groupThousands(intPart) + '.' + decPart;
     }
     
     // Nombres >= 1M avec suffixes
@@ -314,7 +361,7 @@ function formatNumber(num, isTotalScore) {
     const scaledAbs = Math.abs(scaled);
     const decimals = scaledAbs >= 100 ? (isTotalScore ? 3 : 2) : (scaledAbs >= 10 ? 3 : 3);
     
-    return scaled.toFixed(decimals).toLocaleString() + " " + suffix;
+    return scaled.toFixed(decimals) + " " + suffix;
 }
 
 function updateAutoMultiplier() {
@@ -347,6 +394,7 @@ function saveGame() {
     const saveData = {
         score: score,
         partsPerSecond: partsPerSecond,
+        partsSinceLaunch: partsSinceLaunch,
         autoMultiplier: autoMultiplier,
         clickMultiplier: clickMultiplier,
         totalPartsFromClicks: totalPartsFromClicks,
@@ -361,6 +409,8 @@ function saveGame() {
         unlockedTrophies: Array.from(unlockedTrophies),
         maxDistance: maxDistance,
         prestigeMultiplier: prestigeMultiplier,
+        starDust: starDust,
+        galacticUpgrades: {...galacticUpgrades},
         rocketsLaunched: rocketsLaunched,
         unlockedPlanets: Array.from(unlockedPlanets),
         planetBonuses: {...planetBonuses},
@@ -374,6 +424,10 @@ function saveGame() {
         buildings: BUILDINGS.map(building => ({
             id: building.id,
             count: building.count
+        })),
+        rocketParts: ROCKET_PARTS.map(part => ({
+            id: part.id,
+            purchased: part.purchased
         })),
         lastSave: Date.now(),
         gameStartTime: gameStartTime,
@@ -408,6 +462,7 @@ function loadGame() {
         // Charger les variables principales
         score = parsed.score || 0;
         partsPerSecond = parsed.partsPerSecond || parsed.autoGain || 0;
+        partsSinceLaunch = parsed.partsSinceLaunch || score;
         autoMultiplier = parsed.autoMultiplier || 1;
         clickMultiplier = parsed.clickMultiplier || 1;
         totalPartsFromClicks = parsed.totalPartsFromClicks || parsed.clickPartsTotal || 0;
@@ -417,6 +472,16 @@ function loadGame() {
         // Charger le système de prestige
         maxDistance = parsed.maxDistance || 0;
         prestigeMultiplier = parsed.prestigeMultiplier || 1;
+        starDust = parsed.starDust || 0;
+        galacticUpgrades = parsed.galacticUpgrades || {};
+        // V2.2: les upgrades galactiques sont uniques (maxLevel=1).
+        // Cap les niveaux anciens pour eviter des bonus excesifs.
+        Object.keys(galacticUpgrades).forEach(uid => {
+            const u = GALACTIC_UPGRADES.find(x => x.id === uid);
+            if (u && galacticUpgrades[uid] > u.maxLevel) {
+                galacticUpgrades[uid] = u.maxLevel;
+            }
+        });
         rocketsLaunched = parsed.rocketsLaunched || 0;
         
         activatedClickUpgrades = parsed.activatedClickUpgrades || [];
@@ -495,6 +560,26 @@ function loadGame() {
                         building.count = savedBuilding.count || 0;
                     }
                 });
+            });
+        }
+
+        // Charger l'état des pièces de fusée (achats uniques)
+        if (parsed.rocketParts) {
+            parsed.rocketParts.forEach(savedPart => {
+                const part = ROCKET_PARTS.find(p => p.id === savedPart.id);
+                if (part) {
+                    part.purchased = !!savedPart.purchased;
+                }
+            });
+        }
+
+        // Restaurer les planetes atteintes et leurs bonus de production
+        if (parsed.unlockedPlanets) {
+            unlockedPlanets = new Set(parsed.unlockedPlanets);
+            PLANETS.forEach(planet => {
+                if (unlockedPlanets.has(planet.id)) {
+                    planetBonuses[planet.id] = planet.bonusPercent / 100;
+                }
             });
         }
 
@@ -736,10 +821,14 @@ function updateAllBuildingButtons() {
     });
 }
 
+function isBuildingUnlocked(building) {
+    return building.unlockCondition ? building.unlockCondition() : true;
+}
+
 function checkBuildingUnlocks() {
     let needsRerender = false;
-    BUILDINGS.forEach(building => {
-        if (building.unlockCondition() && !unlockedBuildings.has(building.id)) {
+    BUILDINGS.forEach((building) => {
+        if (isBuildingUnlocked(building) && !unlockedBuildings.has(building.id)) {
             unlockedBuildings.add(building.id);
             needsRerender = true;
         }
@@ -753,11 +842,8 @@ function renderBuildings() {
     const container = document.getElementById('buildings-list');
     container.innerHTML = '';
 
-    BUILDINGS.forEach(building => {
-        if (building.unlockCondition() || unlockedBuildings.has(building.id)) {
-            if (building.unlockCondition() && !unlockedBuildings.has(building.id)) {
-                unlockedBuildings.add(building.id);
-            }
+    BUILDINGS.forEach((building) => {
+        if (isBuildingUnlocked(building) || unlockedBuildings.has(building.id)) {
             renderBuilding(building);
         }
     });
@@ -774,9 +860,11 @@ function renderBuilding(building) {
     buildingElement.id = `building-${building.id}`;
     buildingElement.setAttribute('data-tooltip', getBuildingTooltip(building));
 
-    // Créer la structure avec l'image du bâtiment en arrière-plan
+    // Créer la structure avec l'image ou l'emoji du bâtiment
     const imageUrl = building.imgPath || '';
-    const imageHtml = imageUrl ? `<img src="${imageUrl}" class="building-image" alt="${building.name}" width="${building.width || 84}" height="${building.height || 84}">` : '';
+    const imageHtml = imageUrl
+        ? `<img src="${imageUrl}" class="building-image" alt="${building.name}" width="${building.width || 84}" height="${building.height || 84}">`
+        : `<span class="building-emoji">${building.image || ''}</span>`;
 
     buildingElement.innerHTML = `
         <div class="building-left">
@@ -810,22 +898,34 @@ function renderBuilding(building) {
 // ============================================
 
 function checkRocketReady() {
-    // Vérifier si toutes les pièces sont débloquées (count > 0)
-    return ROCKET_PARTS.every(part => part.count > 0);
+    // Vérifier si toutes les pièces de fusée sont achetées
+    return ROCKET_PARTS.every(part => part.purchased);
 }
 
+const PIECE_DISTANCE_MULT = 1.0;
+const DISTANCE_SCORE_EXP = 1.05;
+const MOON_DISTANCE = 384400;
+// Facteur de calibration : les parts générées sont divisées avant l'exposant
+// pour que la distance ne décolle pas trop vite en début de partie.
+const DISTANCE_PART_DIVISOR = 10;
+// Croissance du coût des pièces de fusée entre les lancements.
+// Douce (×1.15) pour que la fusée se reconstruise vite après un reset,
+// comme dans Cookie Clicker où l'ascension est toujours accessible.
+const ROCKET_PART_COST_GROWTH = 1.15;
+
 function calculateDistance() {
-    // Calculer la distance basée sur le score et le nombre de pièces
-    const partsUnlocked = ROCKET_PARTS.filter(part => part.count > 0).length;
-    const totalScore = Math.max(score, 0) + 1; // Éviter les valeurs négatives
-    const logDistance = Math.log(totalScore) * 1000;
-    const partsBonus = partsUnlocked * 100;
-    const baseDistance = Math.floor(logDistance + partsBonus);
-    
-    // S'assurer que prestigeMultiplier est un nombre valide
-    const multiplier = isNaN(prestigeMultiplier) ? 1 : prestigeMultiplier;
-    
-    return baseDistance * multiplier;
+    const partsUnlocked = ROCKET_PARTS.filter(part => part.purchased).length;
+    const totalParts = Math.max(partsSinceLaunch, 0);
+    const partsMult = Math.pow(PIECE_DISTANCE_MULT, partsUnlocked);
+    const scoreFactor = totalParts > 0 ? Math.pow(totalParts / DISTANCE_PART_DIVISOR, DISTANCE_SCORE_EXP) : 0;
+    const baseDistance = partsMult * scoreFactor;
+
+    // Le prestige aide la distance mais de façon amortie (logarithmique) pour que
+    // chaque planète reste plus difficile à atteindre que la précédente.
+    const prestige = isNaN(prestigeMultiplier) ? 1 : prestigeMultiplier;
+    const prestigeDistanceBoost = 1 + (prestige - 1) / 2;
+
+    return baseDistance * prestigeDistanceBoost * getDistanceBonus();
 }
 
 function getCurrentDistance() {
@@ -890,6 +990,11 @@ function showLaunchResults(distance) {
     distanceElement.textContent = formatNumber(safeDistance) + ' km';
     multiplierElement.textContent = safeMultiplier.toFixed(2);
     rocketsElement.textContent = safeRockets;
+    const stardustEl = document.getElementById('launch-results-stardust');
+    if (stardustEl) {
+        const dustGained = Math.floor(Math.sqrt(safeDistance / MOON_DISTANCE) * getStardustGainBonus());
+        stardustEl.textContent = '+' + formatNumber(dustGained) + '  (total: ' + formatNumber(starDust) + ')';
+    }
     
     modal.classList.add('active');
 }
@@ -915,12 +1020,13 @@ function calculatePlanetProgress(distance) {
         }
     }
 
-    if (currentPlanetIndex === -1) {
-        // Pas encore atteint la Lune
+    // Earth (index 0) est le point de départ, pas un objectif.
+    // On la traite comme si on n'avait pas encore atteint de planète.
+    if (currentPlanetIndex <= 0) {
         return {
             currentPlanet: null,
-            nextPlanet: PLANETS[0],
-            progressPercent: Math.round((distance / PLANETS[0].distanceRequired) * 100)
+            nextPlanet: PLANETS[1],
+            progressPercent: Math.round((distance / PLANETS[1].distanceRequired) * 100)
         };
     }
 
@@ -956,7 +1062,7 @@ function getNextTwoPlanets(distance) {
     
     if (currentIndex === -1) {
         // Pas encore atteint la Lune, afficher Lune et Mars
-        nextPlanets = [PLANETS[0], PLANETS[1]];
+        nextPlanets = [PLANETS[1], PLANETS[2]];
     } else if (currentIndex >= PLANETS.length - 2) {
         // A atteint ou dépassé l'avant-dernière planète
         nextPlanets = [PLANETS[PLANETS.length - 2], PLANETS[PLANETS.length - 1]];
@@ -984,7 +1090,7 @@ function checkNewPlanetsUnlocked(distance) {
 }
 
 function getTotalPlanetBonus() {
-    let total = 1;
+    let total = 0;
     Object.values(planetBonuses).forEach(bonus => {
         total += bonus;
     });
@@ -1163,26 +1269,36 @@ function confirmSpaceMapAndReset() {
         maxDistance = lastLaunchDistance;
     }
     rocketsLaunched++;
-    prestigeMultiplier = 1 + (isNaN(maxDistance) ? 0 : maxDistance / 1000000);
+    prestigeMultiplier = 1 + Math.log(1 + (isNaN(maxDistance) ? 0 : maxDistance) / MOON_DISTANCE) / 2;
+
+    // Gain de Poussière d'Étoiles (monnaie de prestige persistante)
+    const dustGained = Math.floor(Math.sqrt((isNaN(lastLaunchDistance) ? 0 : lastLaunchDistance) / MOON_DISTANCE) * getStardustGainBonus());
+    if (dustGained > 0) {
+        starDust += dustGained;
+    }
     
-    // Appliquer les bonus des planètes au prestigeMultiplier
-    const planetBonus = getTotalPlanetBonus();
-    prestigeMultiplier *= (isNaN(planetBonus) ? 1 : planetBonus);
-    
-    // Reset du score mais garder les pièces et les bonus
+    // Reset du score, des bâtiments et des pièces de fusée (garde les bonus/prestige)
     score = 0;
     BUILDINGS.forEach(b => b.count = 0);
+    ROCKET_PARTS.forEach(p => p.purchased = false);
+    constructedParts = new Set();
+    const scene = document.getElementById('rocket-parts-container');
+    if (scene) scene.innerHTML = '';
     unlockedBuildings = new Set();
+    applyStartupBonus();
     totalPartsFromClicks = 0;
     activatedClickUpgrades = [];
     buildingUpgrades = {};
     buildingUpgradeCosts = {};
     totalGeneratedByBuilding = {};
+    partsSinceLaunch = 0;
     
     updateDisplay();
     saveGame();
+    checkBuildingUnlocks();
     renderBuildings();
     renderUpgrades();
+    renderRocketPartsShop();
     
     // Afficher le modal de résultats
     showLaunchResults(lastLaunchDistance);
@@ -1193,6 +1309,178 @@ function confirmSpaceMapAndReset() {
 
 function closeSpaceMap() {
     document.getElementById('space-map-modal').classList.remove('active');
+}
+
+// ============================================
+// ATELIER GALACTIQUE (upgrades permanents)
+// ============================================
+
+function getGalacticUpgradeLevel(upgradeId) {
+    return galacticUpgrades[upgradeId] || 0;
+}
+
+function getGalacticUpgradeCost(upgrade) {
+    const level = getGalacticUpgradeLevel(upgrade.id);
+    return Math.floor(upgrade.baseCost * Math.pow(upgrade.costMult, level));
+}
+
+function isGalacticUpgradeLocked(upgrade) {
+    if (!upgrade.requires) return false;
+    return upgrade.requires.some(req => getGalacticUpgradeLevel(req) === 0);
+}
+
+function buyGalacticUpgrade(upgradeId) {
+    const upgrade = GALACTIC_UPGRADES.find(u => u.id === upgradeId);
+    if (!upgrade) return;
+    const level = getGalacticUpgradeLevel(upgradeId);
+    if (level >= upgrade.maxLevel) return;
+    if (isGalacticUpgradeLocked(upgrade)) {
+        showToast("\u274c Prérequis non rempli");
+        return;
+    }
+    const cost = getGalacticUpgradeCost(upgrade);
+    if (starDust < cost) {
+        showToast("\u274c Pas assez de Poussière d'Étoiles");
+        return;
+    }
+    starDust -= cost;
+    galacticUpgrades[upgradeId] = level + 1;
+    updateStardustDisplay();
+    renderGalacticShop();
+    saveGame();
+    showToast("\u2728 " + upgrade.name + " niveau " + (level + 1));
+}
+
+// Getters d'effets (utilisés par la boucle de jeu)
+function getUpgradeEffect(upgradeId) {
+    const u = GALACTIC_UPGRADES.find(x => x.id === upgradeId);
+    return u ? getGalacticUpgradeLevel(upgradeId) * u.effectPerLevel : 0;
+}
+
+function getProductionBonus() {
+    return 1
+        + getUpgradeEffect('prod1')
+        + getUpgradeEffect('prod3')
+        + getUpgradeEffect('prod4')
+        + getUpgradeEffect('prod5')
+        + getUpgradeEffect('prod6')
+        + getUpgradeEffect('prod7');
+}
+function getBuildingCostReduction() {
+    return Math.min(0.80, getUpgradeEffect('prod2'));
+}
+function getRocketPartDiscount() {
+    return Math.min(0.50, getUpgradeEffect('rock1') + getUpgradeEffect('rock3'));
+}
+function getStartupAteliers() {
+    return getUpgradeEffect('rock2');
+}
+function getCometFrequencyBonus() {
+    return getUpgradeEffect('exp1') + getUpgradeEffect('exp3') + getUpgradeEffect('exp5');
+}
+function getStardustGainBonus() {
+    return 1 + getUpgradeEffect('exp2') + getUpgradeEffect('exp4') + getUpgradeEffect('exp6');
+}
+function getDistanceBonus() {
+    return 1 + getUpgradeEffect('rock4') + getUpgradeEffect('rock5') + getUpgradeEffect('rock6');
+}
+function getClickPowerBonus() {
+    return 1
+        + getUpgradeEffect('click1')
+        + getUpgradeEffect('click2')
+        + getUpgradeEffect('click4')
+        + getUpgradeEffect('click5');
+}
+function getCritChance() {
+    return Math.min(0.50, getUpgradeEffect('click3'));
+}
+function getBoosterDiscount() {
+    return Math.min(0.50, getUpgradeEffect('coll4'));
+}
+function getCollectionUpgradeBonus() {
+    return getUpgradeEffect('coll3') + getUpgradeEffect('coll5');
+}
+function getRarityBoost() {
+    return Math.min(0.50, getUpgradeEffect('coll2'));
+}
+
+function applyStartupBonus() {
+    const freeAteliers = getStartupAteliers();
+    if (freeAteliers > 0) {
+        const atelier = BUILDINGS.find(b => b.id === 'workshop');
+        if (atelier) {
+            atelier.count += freeAteliers;
+            unlockedBuildings.add(atelier.id);
+        }
+    }
+}
+
+function renderGalacticShop() {
+    const container = document.getElementById('galactic-shop-list');
+    if (!container) return;
+    container.innerHTML = '';
+    GALACTIC_BRANCHES.forEach(branch => {
+        const branchEl = document.createElement('div');
+        branchEl.className = 'galactic-branch';
+        branchEl.style.setProperty('--branch-color', branch.color);
+
+        const header = document.createElement('div');
+        header.className = 'galactic-branch-header';
+        header.innerHTML = '<span class="galactic-branch-icon">' + branch.icon + '</span><span class="galactic-branch-name">' + branch.name + '</span>';
+        branchEl.appendChild(header);
+
+        const treeEl = document.createElement('div');
+        treeEl.className = 'galactic-tree';
+
+        const upgrades = GALACTIC_UPGRADES.filter(u => u.branch === branch.id);
+        upgrades.forEach(upgrade => {
+            const level = getGalacticUpgradeLevel(upgrade.id);
+            const maxed = level >= upgrade.maxLevel;
+            const locked = isGalacticUpgradeLocked(upgrade);
+            const cost = getGalacticUpgradeCost(upgrade);
+            const affordable = starDust >= cost && !locked;
+            const el = document.createElement('div');
+            el.className = 'galactic-node' + (maxed ? ' maxed' : '') + (locked ? ' locked' : '') + (!affordable && !maxed && !locked ? ' too-expensive' : '');
+
+            let reqHtml = '';
+            if (upgrade.requires) {
+                const reqNames = upgrade.requires.map(r => {
+                    const ru = GALACTIC_UPGRADES.find(u => u.id === r);
+                    return ru ? ru.name : r;
+                });
+                reqHtml = '<span class="galactic-req">⛔ Prérequis: ' + reqNames.join(', ') + '</span>';
+            }
+
+            el.innerHTML =
+                '<div class="galactic-node-top">' +
+                    '<span class="galactic-node-name">' + upgrade.name + '</span>' +
+                    (maxed ? '<span class="galactic-node-max">MAX</span>' : '') +
+                '</div>' +
+                '<span class="galactic-node-desc">' + upgrade.desc + '</span>' +
+                '<div class="galactic-node-bottom">' +
+                    '<span class="galactic-node-level">Niv. ' + level + '/' + upgrade.maxLevel + '</span>' +
+                    (maxed
+                        ? ''
+                        : locked
+                            ? reqHtml
+                            : '<button class="galactic-btn" onclick="buyGalacticUpgrade(\'' + upgrade.id + '\')"' + (!affordable ? ' disabled' : '') + '>' + formatNumber(cost) + ' ✨</button>') +
+                '</div>';
+            treeEl.appendChild(el);
+        });
+
+        branchEl.appendChild(treeEl);
+        container.appendChild(branchEl);
+    });
+}
+
+function toggleGalacticShop() {
+    const modal = document.getElementById('galactic-shop-modal');
+    if (modal.classList.contains('active')) {
+        modal.classList.remove('active');
+    } else {
+        renderGalacticShop();
+        modal.classList.add('active');
+    }
 }
 
 // ============================================
@@ -1216,6 +1504,8 @@ function updateSpaceProgress() {
             } else {
                 planetDisplay.innerHTML = `${traveledProgress.currentPlanet.emoji} ${traveledProgress.currentPlanet.name}: 100%`;
             }
+        } else if (traveledProgress.nextPlanet) {
+            planetDisplay.innerHTML = `${traveledProgress.nextPlanet.emoji} ${traveledProgress.nextPlanet.name}: ${traveledProgress.progressPercent}%`;
         } else {
             planetDisplay.innerHTML = `🌍 Terre: 0%`;
         }
@@ -1237,7 +1527,7 @@ function updateSpaceProgress() {
         sidebarDistanceMax.textContent = formatNumber(traveledDistance) + ' km';
     }
     if (sidebarBonus) {
-        const totalBonus = getTotalPlanetBonus();
+        const totalBonus = getPlanetProductionBonus();
         sidebarBonus.textContent = 'x' + totalBonus.toFixed(2);
     }
     if (sidebarPlanets) {
@@ -1250,127 +1540,134 @@ function updateMiniSpaceMap(distance) {
     const container = document.getElementById('mini-space-map');
     if (!container) return;
     
-    container.innerHTML = '';
-    
     const progress = calculatePlanetProgress(distance);
     
     // Position des planètes dans la mini-map
-    // Planète 1: à gauche avec décalage (15%)
-    // Planète 2: au centre (50%)
-    // Planète 3: proche du bord droit (85%)
     const planetPositions = [15, 50, 85];
     
-    // Dessiner jusqu'à 3 planètes (celle en cours + les 2 prochaines)
+    // Déterminer les planètes à afficher
     const planetsToShow = [];
     if (progress.currentPlanet) {
         const currentIndex = PLANETS.findIndex(p => p.id === progress.currentPlanet.id);
         if (currentIndex !== -1) {
-            // Ajouter la planète actuelle et les 2 suivantes
             planetsToShow.push(PLANETS[currentIndex]);
             if (currentIndex + 1 < PLANETS.length) planetsToShow.push(PLANETS[currentIndex + 1]);
             if (currentIndex + 2 < PLANETS.length) planetsToShow.push(PLANETS[currentIndex + 2]);
         }
     } else {
-        // Avant la première planète, afficher les 3 premières
+        // Avant la Lune : afficher Terre (départ), Lune, Mars
         planetsToShow.push(PLANETS[0]);
         if (PLANETS.length > 1) planetsToShow.push(PLANETS[1]);
         if (PLANETS.length > 2) planetsToShow.push(PLANETS[2]);
     }
     
-    // Dessiner les planètes
-    planetsToShow.forEach((planet, index) => {
-        const planetElement = document.createElement('div');
-        planetElement.className = 'space-planet';
-        
-        const isUnlocked = unlockedPlanets.has(planet.id) || distance >= planet.distanceRequired;
-        const isCurrent = progress.currentPlanet && progress.currentPlanet.id === planet.id;
-        
-        if (isUnlocked) planetElement.classList.add('unlocked');
-        if (isCurrent) planetElement.classList.add('current');
-        
-        // Utiliser l'image si disponible, sinon l'emoji
-        let planetHtml = '';
-        if (planet.imgPath) {
-            planetHtml = `<img src="${planet.imgPath}" class="planet-image" alt="${planet.name}">`;
-        } else {
-            planetHtml = `<span class="planet-emoji">${planet.emoji}</span>`;
-        }
-        planetHtml += `<div class="planet-name">${planet.name}</div>`;
-        
-        planetElement.innerHTML = planetHtml;
-        planetElement.style.setProperty('--planet-color', planet.color);
-        
-        // Positionner la planète
-        const position = planetPositions[index] || (index * 40 + 15);
-        planetElement.style.left = `${position}%`;
-        planetElement.style.transform = 'translateX(-50%)';
-        planetElement.style.textAlign = 'center';
-        
-        container.appendChild(planetElement);
-    });
+    // Clé pour détecter si les planètes affichées ont changé
+    const planetsKey = planetsToShow.map(p => p.id).join(',');
     
-    // Ajouter les lignes de connexion entre les planètes
-    for (let i = 0; i < planetsToShow.length - 1; i++) {
-        const currentPlanet = planetsToShow[i];
-        const nextPlanet = planetsToShow[i + 1];
+    // Ne recréer le DOM (planètes + connexions) que si les planètes changent.
+    // Sinon, mettre à jour uniquement la position du vaisseau pour éviter
+    // que l'animation CSS ne redémarre toutes les 500ms.
+    if (container.dataset.planetsKey !== planetsKey) {
+        container.dataset.planetsKey = planetsKey;
+        container.innerHTML = '';
         
-        const isCurrentUnlocked = unlockedPlanets.has(currentPlanet.id) || distance >= currentPlanet.distanceRequired;
-        const isNextUnlocked = unlockedPlanets.has(nextPlanet.id) || distance >= nextPlanet.distanceRequired;
+        // Dessiner les planètes
+        planetsToShow.forEach((planet, index) => {
+            const planetElement = document.createElement('div');
+            planetElement.className = 'space-planet';
+            
+            const isUnlocked = unlockedPlanets.has(planet.id) || distance >= planet.distanceRequired;
+            const isCurrent = progress.currentPlanet && progress.currentPlanet.id === planet.id;
+            
+            if (isUnlocked) planetElement.classList.add('unlocked');
+            if (isCurrent) planetElement.classList.add('current');
+            if (planet.id === 'earth') planetElement.classList.add('origin');
+            
+            let planetHtml = '';
+            if (planet.imgPath) {
+                planetHtml = `<img src="${planet.imgPath}" class="planet-image" alt="${planet.name}">`;
+            } else {
+                planetHtml = `<span class="planet-emoji">${planet.emoji}</span>`;
+            }
+            planetHtml += `<div class="planet-name">${planet.name}</div>`;
+            const planetDist = planet.distanceRequired;
+            const distLabel = planet.id === 'earth' ? 'Départ' : `${formatNumber(planetDist)} km`;
+            planetHtml += `<div class="planet-distance">${distLabel}</div>`;
+            
+            planetElement.innerHTML = planetHtml;
+            planetElement.style.setProperty('--planet-color', planet.color);
+            
+            const position = planetPositions[index] || (index * 40 + 15);
+            planetElement.style.left = `${position}%`;
+            planetElement.style.transform = 'translateX(-50%)';
+            planetElement.style.textAlign = 'center';
+            
+            container.appendChild(planetElement);
+        });
         
-        const line = document.createElement('div');
-        line.className = 'space-connection';
-        if (isCurrentUnlocked && isNextUnlocked) {
-            line.classList.add('active');
+        // Ajouter les lignes de connexion entre les planètes
+        for (let i = 0; i < planetsToShow.length - 1; i++) {
+            const currentPlanet = planetsToShow[i];
+            const nextPlanet = planetsToShow[i + 1];
+            
+            const isCurrentUnlocked = unlockedPlanets.has(currentPlanet.id) || distance >= currentPlanet.distanceRequired;
+            const isNextUnlocked = unlockedPlanets.has(nextPlanet.id) || distance >= nextPlanet.distanceRequired;
+            
+            const line = document.createElement('div');
+            line.className = 'space-connection';
+            if (isCurrentUnlocked && isNextUnlocked) {
+                line.classList.add('active');
+            }
+            
+            const startPos = planetPositions[i] || (i * 40 + 15);
+            const endPos = planetPositions[i + 1] || ((i + 1) * 40 + 15);
+            line.style.left = `${startPos}%`;
+            line.style.width = `${endPos - startPos}%`;
+            container.appendChild(line);
         }
-        
-        const startPos = planetPositions[i] || (i * 40 + 15);
-        const endPos = planetPositions[i + 1] || ((i + 1) * 40 + 15);
-        line.style.left = `${startPos}%`;
-        line.style.width = `${endPos - startPos}%`;
-        container.appendChild(line);
     }
     
-    // Ajouter le vaisseau spatial (émoji fusée)
-    if (progress.currentPlanet || progress.progressPercent > 0) {
-        const spaceship = document.createElement('div');
-        spaceship.className = 'spaceship';
-        spaceship.innerHTML = '🚀';
-        
+    // Mettre à jour ou créer le vaisseau
+    let spaceship = container.querySelector('.spaceship');
+    const shouldShowShip = true;
+    
+    if (shouldShowShip) {
         // Calculer la position du vaisseau
-        let shipPosition = 15; // Position de départ (première planète)
+        let shipPosition = 15;
         
         if (progress.currentPlanet) {
             const currentIndex = PLANETS.findIndex(p => p.id === progress.currentPlanet.id);
             
             if (currentIndex > 0 && progress.nextPlanet) {
-                // Entre deux planètes
                 const nextIndex = PLANETS.findIndex(p => p.id === progress.nextPlanet.id);
                 
                 if (nextIndex > currentIndex && nextIndex < currentIndex + 3) {
-                    // Calculer la position entre les deux planètes
                     const startPos = planetPositions[0] || 15;
                     const endPos = planetPositions[1] || 50;
                     shipPosition = startPos + (endPos - startPos) * (progress.progressPercent / 100);
                 } else {
-                    // Position sur la planète actuelle
                     shipPosition = planetPositions[Math.min(currentIndex, 2)] || 50;
                 }
             } else if (currentIndex === 0) {
-                // Sur Terre (0 km), position à 15%
                 shipPosition = 15;
             } else {
-                // Sur la dernière planète visible
                 shipPosition = planetPositions[Math.min(currentIndex, 2)] || 85;
             }
         } else {
-            // Avant d'atteindre la première planète
             const firstPlanetPos = planetPositions[0] || 15;
             const secondPlanetPos = planetPositions[1] || 50;
             shipPosition = firstPlanetPos + (secondPlanetPos - firstPlanetPos) * (progress.progressPercent / 100);
         }
         
+        if (!spaceship) {
+            spaceship = document.createElement('div');
+            spaceship.className = 'spaceship';
+            spaceship.innerHTML = '\u{1F680}';
+            container.appendChild(spaceship);
+        }
         spaceship.style.left = `${shipPosition}%`;
-        container.appendChild(spaceship);
+    } else if (spaceship) {
+        spaceship.remove();
     }
 }
 
@@ -1386,40 +1683,25 @@ function renderUpgrades() {
     const container = document.getElementById('upgrades-container');
     container.innerHTML = '';
 
+    const available = [];
+
     // Upgrades de clic
     CLICK_UPGRADES.forEach(upgrade => {
         if (totalPartsFromClicks >= upgrade.threshold && !activatedClickUpgrades.includes(upgrade.threshold)) {
             const upgradeIndex = CLICK_UPGRADES.indexOf(upgrade);
             const color = UPGRADE_COLORS[upgradeIndex % UPGRADE_COLORS.length];
-
-            const upgradeElement = document.createElement('div');
-            upgradeElement.className = 'upgrade-icon';
-            upgradeElement.style.borderColor = color;
-            upgradeElement.style.boxShadow = `var(--shadow), 0 0 6px ${color}`;
-            upgradeElement.innerHTML = '';
-
-            const img = document.createElement('img');
-            img.className = 'upgrade-img';
-            img.src = 'images/cursor.svg';
-            img.alt = upgrade.name;
-            upgradeElement.appendChild(img);
-
-            const levelBadge = document.createElement('span');
-            levelBadge.className = 'upgrade-level';
-            levelBadge.textContent = upgrade.threshold;
-            upgradeElement.appendChild(levelBadge);
-
-            upgradeElement.addEventListener('mouseenter', (e) => {
-                const rect = e.target.getBoundingClientRect();
-                showTooltip(`${upgrade.name} — ×2 clic — ${formatNumber(upgrade.cost)} Parts`, rect.left + rect.width/2, rect.top);
+            available.push({
+                cost: upgrade.cost,
+                render: () => {
+                    const el = createUpgradeElement(color, 'images/cursor.svg', upgrade.name, upgrade.threshold);
+                    attachTooltip(el, `${upgrade.name} — ×2 clic — ${formatNumber(upgrade.cost)} Parts`);
+                    el.onclick = () => buyClickUpgrade(upgrade.threshold);
+                    return el;
+                }
             });
-            upgradeElement.addEventListener('mouseleave', hideTooltip);
-
-            upgradeElement.onclick = () => buyClickUpgrade(upgrade.threshold);
-            container.appendChild(upgradeElement);
         }
     });
-    
+
     // Upgrades de buildings
     BUILDING_UPGRADE_THRESHOLDS.forEach(threshold => {
         BUILDINGS.forEach(building => {
@@ -1427,35 +1709,50 @@ function renderUpgrades() {
                 const thresholdIndex = BUILDING_UPGRADE_THRESHOLDS.indexOf(threshold);
                 const color = UPGRADE_COLORS[thresholdIndex];
                 const cost = getBuildingUpgradeFixedCost(building.id, threshold);
-                
-                const upgradeElement = document.createElement('div');
-                upgradeElement.className = 'upgrade-icon';
-                upgradeElement.style.borderColor = color;
-                upgradeElement.style.boxShadow = `var(--shadow), 0 0 6px ${color}`;
-                upgradeElement.innerHTML = '';
-
-                const img = document.createElement('img');
-                img.className = 'upgrade-img';
-                img.src = building.imgPath || '';
-                img.alt = building.name;
-                upgradeElement.appendChild(img);
-
-                const levelBadge = document.createElement('span');
-                levelBadge.className = 'upgrade-level';
-                levelBadge.textContent = threshold;
-                upgradeElement.appendChild(levelBadge);
-                
-                upgradeElement.addEventListener('mouseenter', (e) => {
-                    const rect = e.target.getBoundingClientRect();
-                    showTooltip(`${building.name} — Palier ${threshold} — ×2 production — ${formatNumber(cost)} Parts`, rect.left + rect.width/2, rect.top);
+                available.push({
+                    cost,
+                    render: () => {
+                        const el = createUpgradeElement(color, building.imgPath || '', building.name, threshold);
+                        attachTooltip(el, `${building.name} — Palier ${threshold} — ×2 production — ${formatNumber(cost)} Parts`);
+                        el.onclick = () => buyBuildingUpgrade(building.id, threshold);
+                        return el;
+                    }
                 });
-                upgradeElement.addEventListener('mouseleave', hideTooltip);
-                
-                upgradeElement.onclick = () => buyBuildingUpgrade(building.id, threshold);
-                container.appendChild(upgradeElement);
             }
         });
     });
+
+    // Tri du moins chere au plus chere
+    available.sort((a, b) => a.cost - b.cost);
+    available.forEach(item => container.appendChild(item.render()));
+}
+
+function createUpgradeElement(color, imgSrc, altText, levelBadgeText) {
+    const el = document.createElement('div');
+    el.className = 'upgrade-icon';
+    el.style.borderColor = color;
+    el.style.boxShadow = `var(--shadow), 0 0 6px ${color}`;
+
+    const img = document.createElement('img');
+    img.className = 'upgrade-img';
+    img.src = imgSrc;
+    img.alt = altText;
+    el.appendChild(img);
+
+    const levelBadge = document.createElement('span');
+    levelBadge.className = 'upgrade-level';
+    levelBadge.textContent = levelBadgeText;
+    el.appendChild(levelBadge);
+
+    return el;
+}
+
+function attachTooltip(element, text) {
+    element.addEventListener('mouseenter', (e) => {
+        const rect = e.target.getBoundingClientRect();
+        showTooltip(text, rect.left + rect.width / 2, rect.top);
+    });
+    element.addEventListener('mouseleave', hideTooltip);
 }
 
 // ============================================
@@ -1539,9 +1836,10 @@ function spawnRandomBonus() {
         clickedBonusesCount++;
 
         if (bonus.id === "meteor") {
-            const oneMinuteProduction = partsPerSecond * 60;
-            score += oneMinuteProduction;
-            showToast(`\u2705 ${bonus.name}: +${formatNumber(oneMinuteProduction)} Parts!`);
+            const instantProduction = partsPerSecond * 10;
+            score += instantProduction;
+            partsSinceLaunch += instantProduction;
+            showToast(`\u2705 ${bonus.name}: +${formatNumber(instantProduction)} Parts!`);
         } 
         else if (bonus.id === "flare") {
             activeRandomBonuses.push({
@@ -1570,13 +1868,28 @@ function spawnRandomBonus() {
 // VISUAL EFFECTS
 // ============================================
 
+function getClickComponents() {
+    const nbUpgrades = activatedClickUpgrades.length;
+    // Base qui double a chaque upgrade de clic (comme Reinforced finger / Carpal tunnel).
+    const baseCpC = Math.pow(2, nbUpgrades);
+    // Bonus par bâtiment possede (equivalent Thousand Fingers) : +0.1 par bâtiment,
+    // multiplie par un facteur croissant avec les upgrades (Million/Billion Fingers).
+    const fingerMult = nbUpgrades >= 2 ? (1 + (nbUpgrades - 1) * 0.5) : 0;
+    const buildingBonus = fingerMult * 0.1 * getTotalBuildingsOwned();
+    // Bonus lie a la production (1% des Parts/s par upgrade).
+    const cpsBonus = nbUpgrades * 0.01 * partsPerSecond;
+    return { baseCpC, buildingBonus, cpsBonus };
+}
+
 function addScore(points) {
-    const clickBonus = activatedClickUpgrades.length * 0.01 * partsPerSecond;
-    const basePoints = points + clickBonus;
-    const totalPoints = basePoints * clickMultiplier;
+    const { baseCpC, buildingBonus, cpsBonus } = getClickComponents();
+    const basePoints = baseCpC + buildingBonus + cpsBonus;
+    const critMult = (Math.random() < getCritChance()) ? 3 : 1;
+    const totalPoints = basePoints * getClickPowerBonus() * critMult;
 
     score += totalPoints;
-    totalPartsFromClicks += basePoints;
+    partsSinceLaunch += totalPoints;
+    totalPartsFromClicks += 1;
 
     showClickEffect(Math.round(totalPoints));
 
@@ -1632,11 +1945,17 @@ function gameLoop() {
     });
 
     partsPerSecond = totalGain;
-    score += partsPerSecond / GAME_LOOP_FPS;
+    const tickGain = partsPerSecond / GAME_LOOP_FPS;
+    score += tickGain;
+    partsSinceLaunch += tickGain;
 
     if (Date.now() - lastBuildingsUpdate > BUILDING_UPDATE_INTERVAL_MS) {
         lastBuildingsUpdate = Date.now();
         updateAllBuildingButtons();
+    }
+    if (Date.now() - lastRocketPartsUpdate > BUILDING_UPDATE_INTERVAL_MS) {
+        lastRocketPartsUpdate = Date.now();
+        renderRocketPartsShop();
     }
     updateDisplay();
     if (Date.now() - lastSpaceProgressUpdate > SPACE_UPDATE_INTERVAL_MS) {
@@ -1660,9 +1979,8 @@ function calculateTotalGenerated() {
 }
 
 function getClickPower() {
-    const basePower = 1;
-    const clickBonus = activatedClickUpgrades.length * 0.01 * partsPerSecond;
-    return (basePower + clickBonus) * clickMultiplier;
+    const { baseCpC, buildingBonus, cpsBonus } = getClickComponents();
+    return (baseCpC + buildingBonus + cpsBonus) * getClickPowerBonus();
 }
 
 function getTotalBuildingsOwned() {
@@ -1901,6 +2219,7 @@ function updateDisplay() {
     document.getElementById('score-value').textContent = formatNumber(score, true);
     document.getElementById('gain-value').textContent = formatNumber(partsPerSecond);
     updateModalPartsCounter();
+    updateStardustDisplay();
     updateBonusTimer();
 }
 
@@ -1909,6 +2228,11 @@ function updateModalPartsCounter() {
     const gainText = formatNumber(partsPerSecond);
     document.querySelectorAll('.modal-parts-value').forEach(el => { el.textContent = scoreText; });
     document.querySelectorAll('.modal-parts-gain').forEach(el => { el.textContent = gainText; });
+}
+
+function updateStardustDisplay() {
+    const text = formatNumber(starDust);
+    document.querySelectorAll('#stardust-value, #stardust-value-2').forEach(el => { el.textContent = text; });
 }
 
 function updateBonusTimer() {
@@ -2219,6 +2543,7 @@ function displayRewardOnCard(card, reward) {
 function surveyCollectWinnings() {
     if (surveyState.pot > 0) {
         score += surveyState.pot;
+        partsSinceLaunch += surveyState.pot;
         showToast(`💰 Tu encaisses ${formatNumber(surveyState.pot)} Parts !`);
         surveyState.pot = 0;
         updateDisplay();
@@ -2313,6 +2638,61 @@ const BOOSTERS = {
     legendary: { name: 'Légendaire', cardCount: 3, cost: () => Math.max(2000, Math.floor(partsPerSecond * 600)),  rarities: { common: 0.25, rare: 0.30, epic: 0.25, legendary: 0.15, alternative: 0.05 } }
 };
 
+// ============================================
+// ATELIER GALACTIQUE - 29 upgrades uniques en 5 branches
+// Ne se reset jamais. Progression meta entre les runs.
+// ============================================
+const GALACTIC_BRANCHES = [
+    { id: 'production',   name: 'Production',    icon: '⚙',  color: '#3b82f6' },
+    { id: 'rocket',       name: 'Fusée',          icon: '🚀', color: '#f59e0b' },
+    { id: 'exploration',  name: 'Exploration',    icon: '🌌', color: '#a855f7' },
+    { id: 'collection',   name: 'Collection',     icon: '🃏', color: '#ec4899' },
+    { id: 'click',        name: 'Clic',            icon: '👆', color: '#10b981' }
+];
+
+const GALACTIC_UPGRADES = [
+    // === BRANCHE PRODUCTION (7) - upgrades uniques ===
+    { id: 'prod1',  branch: 'production', tier: 1, name: 'R\u00e9acteur \u00e0 fusion',       desc: '+25% production globale.',                  baseCost: 15,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.25 },
+    { id: 'prod2',  branch: 'production', tier: 2, name: 'Optimisation \u00e9nerg\u00e9tique', desc: '-30% co\u00fbt des b\u00e2timents.',        baseCost: 30,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.30, requires: ['prod1'] },
+    { id: 'prod3',  branch: 'production', tier: 3, name: 'Surcharge industrielle',  desc: '+50% production globale.',                  baseCost: 60,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.50, requires: ['prod1'] },
+    { id: 'prod4',  branch: 'production', tier: 4, name: 'Automatisation avanc\u00e9e',  desc: '+75% production globale.',                  baseCost: 120,  costMult: 1.0, maxLevel: 1, effectPerLevel: 0.75, requires: ['prod2', 'prod3'] },
+    { id: 'prod5',  branch: 'production', tier: 5, name: 'Nanotechnologie',         desc: '+100% production globale.',                 baseCost: 250,  costMult: 1.0, maxLevel: 1, effectPerLevel: 1.0, requires: ['prod4'] },
+    { id: 'prod6',  branch: 'production', tier: 6, name: 'Synth\u00e8se de mati\u00e8re noire', desc: '+150% production globale.',                baseCost: 500,  costMult: 1.0, maxLevel: 1, effectPerLevel: 1.5, requires: ['prod5'] },
+    { id: 'prod7',  branch: 'production', tier: 7, name: 'Singularit\u00e9 technologique', desc: '+200% production globale.',                 baseCost: 1000, costMult: 1.0, maxLevel: 1, effectPerLevel: 2.0, requires: ['prod6'] },
+
+    // === BRANCHE FUS\u00c9E (6) - upgrades uniques ===
+    { id: 'rock1',  branch: 'rocket', tier: 1, name: 'Ing\u00e9nierie optimis\u00e9e',     desc: '-30% co\u00fbt des pi\u00e8ces de fus\u00e9e.',         baseCost: 10,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.30 },
+    { id: 'rock2',  branch: 'rocket', tier: 2, name: 'D\u00e9marrage assist\u00e9',        desc: '+5 Ateliers gratuits au d\u00e9but de chaque run.', baseCost: 20,   costMult: 1.0, maxLevel: 1, effectPerLevel: 5, requires: ['rock1'] },
+    { id: 'rock3',  branch: 'rocket', tier: 3, name: 'Mat\u00e9riaux composites',     desc: '-50% co\u00fbt des pi\u00e8ces de fus\u00e9e.',         baseCost: 40,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.50, requires: ['rock1'] },
+    { id: 'rock4',  branch: 'rocket', tier: 4, name: 'Propulsion quantique',     desc: '+100% distance de lancement.',              baseCost: 100,  costMult: 1.0, maxLevel: 1, effectPerLevel: 1.0, requires: ['rock2', 'rock3'] },
+    { id: 'rock5',  branch: 'rocket', tier: 5, name: 'T\u00e9l\u00e9portation spatiale',   desc: '+200% distance de lancement.',              baseCost: 300,  costMult: 1.0, maxLevel: 1, effectPerLevel: 2.0, requires: ['rock4'] },
+    { id: 'rock6',  branch: 'rocket', tier: 6, name: 'Moteur \u00e0 distorsion',      desc: '+500% distance de lancement.',              baseCost: 800,  costMult: 1.0, maxLevel: 1, effectPerLevel: 5.0, requires: ['rock5'] },
+
+    // === BRANCHE EXPLORATION (6) - upgrades uniques ===
+    { id: 'exp1',   branch: 'exploration', tier: 1, name: 'Flotte de reconnaissance', desc: '+100% fr\u00e9quence des com\u00e8tes.',       baseCost: 8,    costMult: 1.0, maxLevel: 1, effectPerLevel: 1.0 },
+    { id: 'exp2',   branch: 'exploration', tier: 2, name: 'Capteurs longue port\u00e9e',   desc: '+100% gain de Poussi\u00e8re d\'\u00c9toiles.', baseCost: 25,   costMult: 1.0, maxLevel: 1, effectPerLevel: 1.0, requires: ['exp1'] },
+    { id: 'exp3',   branch: 'exploration', tier: 3, name: 'Boosters de lancement',   desc: '+150% fr\u00e9quence des com\u00e8tes.',      baseCost: 50,   costMult: 1.0, maxLevel: 1, effectPerLevel: 1.5, requires: ['exp1'] },
+    { id: 'exp4',   branch: 'exploration', tier: 4, name: 'Cartographie stellaire',   desc: '+200% gain de Poussi\u00e8re d\'\u00c9toiles.', baseCost: 100,  costMult: 1.0, maxLevel: 1, effectPerLevel: 2.0, requires: ['exp2', 'exp3'] },
+    { id: 'exp5',   branch: 'exploration', tier: 5, name: 'Voyage interstellaire',   desc: '+200% fr\u00e9quence des com\u00e8tes.',      baseCost: 250,  costMult: 1.0, maxLevel: 1, effectPerLevel: 2.0, requires: ['exp4'] },
+    { id: 'exp6',   branch: 'exploration', tier: 6, name: 'Trou de ver',              desc: 'x3 gain de Poussi\u00e8re d\'\u00c9toiles.',   baseCost: 600,  costMult: 1.0, maxLevel: 1, effectPerLevel: 2.0, requires: ['exp5'] },
+
+    // === BRANCHE COLLECTION (5) - upgrades uniques ===
+    { id: 'coll1',  branch: 'collection', tier: 1, name: 'March\u00e9 noir',           desc: '+2 cartes par booster Premium/L\u00e9gendaire.', baseCost: 30,   costMult: 1.0, maxLevel: 1, effectPerLevel: 2 },
+    { id: 'coll2',  branch: 'collection', tier: 2, name: 'Chance de collection',   desc: '+25% chance de raret\u00e9 sup\u00e9rieure.',  baseCost: 60,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.25, requires: ['coll1'] },
+    { id: 'coll3',  branch: 'collection', tier: 3, name: 'Boosters renforc\u00e9s',      desc: '+50% bonus de collection.',              baseCost: 100,  costMult: 1.0, maxLevel: 1, effectPerLevel: 0.50, requires: ['coll1'] },
+    { id: 'coll4',  branch: 'collection', tier: 4, name: 'Carte de commer\u00e7ant',     desc: '-40% co\u00fbt des boosters.',          baseCost: 200,  costMult: 1.0, maxLevel: 1, effectPerLevel: 0.40, requires: ['coll2', 'coll3'] },
+    { id: 'coll5',  branch: 'collection', tier: 5, name: 'Album cosmique',          desc: 'x2 bonus de collection complet.',        baseCost: 500,  costMult: 1.0, maxLevel: 1, effectPerLevel: 1.0, requires: ['coll4'] },
+
+    // === BRANCHE CLIC (5) - upgrades uniques ===
+    { id: 'click1', branch: 'click', tier: 1, name: 'Gants renforc\u00e9s',      desc: '+50% puissance de clic.',                baseCost: 10,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.50 },
+    { id: 'click2', branch: 'click', tier: 2, name: 'Main cybern\u00e9tique',     desc: '+100% puissance de clic.',              baseCost: 40,   costMult: 1.0, maxLevel: 1, effectPerLevel: 1.0, requires: ['click1'] },
+    { id: 'click3', branch: 'click', tier: 3, name: 'Frappe critique',       desc: '+25% chance de coup critique (x3).',    baseCost: 80,   costMult: 1.0, maxLevel: 1, effectPerLevel: 0.25, requires: ['click1'] },
+    { id: 'click4', branch: 'click', tier: 4, name: 'Surcharge neuronale',    desc: '+200% puissance de clic.',              baseCost: 150,  costMult: 1.0, maxLevel: 1, effectPerLevel: 2.0, requires: ['click2', 'click3'] },
+    { id: 'click5', branch: 'click', tier: 5, name: 'Main de l\'univers',    desc: 'x5 puissance de clic.',                 baseCost: 400,  costMult: 1.0, maxLevel: 1, effectPerLevel: 4.0, requires: ['click4'] }
+];
+
+let galacticUpgrades = {};
+
 let cardCollection = {};
 
 function openCardCollection() {
@@ -2351,7 +2731,7 @@ function showCardReveal() {
 function updateBoosterPrices() {
     for (const key in BOOSTERS) {
         const costEl = document.getElementById('cc-cost-' + key);
-        if (costEl) costEl.textContent = '💰 ' + formatNumber(BOOSTERS[key].cost());
+        if (costEl) costEl.textContent = '💰 ' + formatNumber(Math.floor(BOOSTERS[key].cost() * (1 - getBoosterDiscount())));
     }
 }
 
@@ -2380,13 +2760,13 @@ function getCollectionBonus() {
 }
 
 function getCollectionMultiplier() {
-    return 1 + getCollectionBonus();
+    return (1 + getCollectionBonus()) * (1 + getCollectionUpgradeBonus());
 }
 
 function buyBooster(type) {
     const booster = BOOSTERS[type];
     if (!booster) return;
-    const cost = booster.cost();
+    const cost = Math.floor(booster.cost() * (1 - getBoosterDiscount()));
     if (score < cost) {
         showToast('❌ Pas assez de Parts pour ce booster !');
         return;
@@ -2395,7 +2775,11 @@ function buyBooster(type) {
     updateDisplay();
 
     const drawn = [];
-    for (let i = 0; i < booster.cardCount; i++) {
+    let cardCount = booster.cardCount;
+    if (type === 'premium' || type === 'legendary') {
+        cardCount += getGalacticUpgradeLevel('coll1');
+    }
+    for (let i = 0; i < cardCount; i++) {
         drawn.push(drawCard(booster.rarities));
     }
 
@@ -2410,11 +2794,23 @@ function buyBooster(type) {
 }
 
 function drawCard(rarities) {
-    const roll = Math.random();
+    const boost = getRarityBoost();
+    const adjusted = {};
+    let total = 0;
+    const order = Object.keys(rarities);
+    for (const r of order) { adjusted[r] = rarities[r]; total += rarities[r]; }
+    if (boost > 0) {
+        const boosted = adjusted['common'] * boost;
+        adjusted['common'] -= boosted;
+        for (let i = 1; i < order.length; i++) {
+            adjusted[order[i]] += boosted / (order.length - 1);
+        }
+    }
+    const roll = Math.random() * total;
     let cumul = 0;
     let chosenRarity = 'common';
-    for (const rarity in rarities) {
-        cumul += rarities[rarity];
+    for (const rarity of order) {
+        cumul += adjusted[rarity];
         if (roll < cumul) { chosenRarity = rarity; break; }
     }
     const pool = COLLECTIBLE_CARDS.filter(c => c.rarity === chosenRarity);
@@ -2499,16 +2895,13 @@ function renderCardAlbum() {
 function init() {
     initGlobals();
     loadGame();
-    
-    // ===== DEBUG: DONNER TOUTES LES PIÈCES POUR TESTER =====
-    // À SUPPRIMER APRES LES TESTS
-    ROCKET_PARTS.forEach(part => {
-        part.count = 1;
-    });
-    
+    applyStartupBonus();
+
     updateDisplay();
     renderBuildings();
     renderUpgrades();
+    renderRocketPartsShop();
+    updateConstructionScene();
     checkBuildingUnlocks();
     checkTrophies();
 }
@@ -2517,7 +2910,15 @@ function init() {
 // TIMERS
 // ============================================
 
-setInterval(spawnRandomBonus, BONUS_SPAWN_INTERVAL_MS);
+function scheduleBonusSpawn() {
+    const bonus = getCometFrequencyBonus();
+    const delay = Math.max(800, BONUS_SPAWN_INTERVAL_MS / (1 + bonus));
+    setTimeout(() => {
+        spawnRandomBonus();
+        scheduleBonusSpawn();
+    }, delay);
+}
+scheduleBonusSpawn();
 setInterval(gameLoop, GAME_LOOP_INTERVAL_MS);
 setInterval(() => {
     if (Date.now() - lastSaveTime > SAVE_INTERVAL_MS) {
@@ -2533,6 +2934,84 @@ window.onload = function() {
 };
 
 
+// ============================================
+// ROCKET PARTS SHOP (achats uniques)
+// ============================================
+
+function getRocketPartCost(part) {
+    const discount = Math.min(0.5, getRocketPartDiscount());
+    return Math.floor(part.cost * Math.pow(ROCKET_PART_COST_GROWTH, rocketsLaunched) * (1 - discount));
+}
+
+function buyRocketPart(partId) {
+    const part = ROCKET_PARTS.find(p => p.id === partId);
+    if (!part || part.purchased) return;
+    const cost = getRocketPartCost(part);
+    if (score < cost) {
+        showToast("\u274c Pas assez de Parts pour " + part.name);
+        return;
+    }
+    score -= cost;
+    part.purchased = true;
+    updateDisplay();
+    updateConstructionScene();
+    renderRocketPartsShop();
+    checkBuildingUnlocks();
+    saveGame();
+    showToast("\u2705 " + part.name + " construit !");
+    checkTrophies();
+}
+
+function renderRocketPartsShop() {
+    const container = document.getElementById('rocket-parts-shop');
+    if (!container) return;
+    const nextPart = ROCKET_PARTS.find(p => !p.purchased);
+    if (!nextPart) {
+        if (container.dataset.partId !== '__complete__') {
+            container.dataset.partId = '__complete__';
+            container.innerHTML =
+                '<div class="rocket-part-frame complete">' +
+                    '<div class="rocket-part-frame-title">Pi\u00e8ces compl\u00e8tes</div>' +
+                    '<div class="rocket-part-frame-complete">\u2713 Fus\u00e9e pr\u00eate \u00e0 lancer</div>' +
+                '</div>';
+        }
+        return;
+    }
+    const cost = getRocketPartCost(nextPart);
+    const isAffordable = score >= cost;
+    // Ne recrerer le DOM que si la piece affichee change. Sinon, mettre a jour
+    // uniquement le cout et l'etat du bouton pour eviter le clignotement du hover.
+    if (container.dataset.partId !== nextPart.id) {
+        container.dataset.partId = nextPart.id;
+        const imageUrl = nextPart.imgPath || '';
+        const imageHtml = imageUrl
+            ? '<img src="' + imageUrl + '" class="rocket-part-icon" alt="' + nextPart.name + '">'
+            : '<span class="rocket-part-icon-placeholder"></span>';
+        const purchasedCount = ROCKET_PARTS.filter(p => p.purchased).length;
+        container.innerHTML =
+            '<div class="rocket-part-frame' + (!isAffordable ? ' locked' : '') + '">' +
+                '<div class="rocket-part-frame-title">Pi\u00e8ce ' + (purchasedCount + 1) + ' / ' + ROCKET_PARTS.length + '</div>' +
+                '<div class="rocket-part-left">' + imageHtml + '</div>' +
+                '<div class="rocket-part-info">' +
+                    '<span class="rocket-part-name">' + nextPart.name + '</span>' +
+                    '<span class="rocket-part-cost">' + formatNumber(cost) + ' Parts</span>' +
+                '</div>' +
+                '<button class="rocket-part-btn" onclick="buyRocketPart(\'' + nextPart.id + '\')"' + (!isAffordable ? ' disabled' : '') + '>Construire</button>' +
+            '</div>';
+    } else {
+        const costEl = container.querySelector('.rocket-part-cost');
+        if (costEl) costEl.textContent = formatNumber(cost) + ' Parts';
+        const btn = container.querySelector('.rocket-part-btn');
+        if (btn) {
+            btn.disabled = !isAffordable;
+        }
+        const frame = container.querySelector('.rocket-part-frame');
+        if (frame) {
+            if (isAffordable) frame.classList.remove('locked');
+            else frame.classList.add('locked');
+        }
+    }
+}
 
 // ============================================
 // ROCKET CONSTRUCTION SCENE
@@ -2549,8 +3028,8 @@ function updateConstructionScene() {
     // container.innerHTML = '';
 
     ROCKET_PARTS.forEach(part => {
-        // L'atelier s'affiche toujours, les autres pièces si count > 0
-        const shouldDisplay = part.id === "workshop" || part.count > 0;
+        // Les pièces de fusée s'affichent une fois achetées
+        const shouldDisplay = part.purchased;
         
         // Vérifier si la pièce existe déjà dans le DOM
         const existingPiece = container.querySelector(`.rocket-piece.${part.id}`);
@@ -2616,10 +3095,9 @@ function updateConstructionScene() {
 }
 
 function checkRocketComplete() {
-    const allParts = ROCKET_PARTS.filter(p => p.id !== 'workshop');
-    const allConstructed = allParts.every(p => constructedParts.has(p.id));
+    const allConstructed = ROCKET_PARTS.every(p => constructedParts.has(p.id));
     
-    const scene = document.getElementById('construction-scene-100x100');
+    const scene = document.getElementById('construction-scene');
     if (allConstructed && scene) {
         scene.classList.add('rocket-complete');
         showToast("🚀 Fusée complète ! Prête pour le décollage !");

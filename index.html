@@ -50,6 +50,10 @@
                     <span class="launch-value" id="launch-results-multiplier">x1</span>
                 </div>
                 <div class="launch-result-item">
+                    <span class="launch-label">✨ Poussière d'Étoiles gagnée:</span>
+                    <span class="launch-value" id="launch-results-stardust">0</span>
+                </div>
+                <div class="launch-result-item">
                     <span class="launch-label">Fusées lancées:</span>
                     <span class="launch-value" id="launch-results-rockets">0</span>
                 </div>
@@ -203,6 +207,10 @@
                     <span class="current-planet-display" id="current-planet-display">
                         🌍 Terre: 0%
                     </span>
+                    <button class="galactic-shop-btn" onclick="toggleGalacticShop()" title="Atelier Galactique">
+                        <span class="galactic-shop-label">⚙ Atelier</span>
+                        <span class="galactic-shop-stardust" title="Poussière d'Étoiles (prestige)">✨ <span id="stardust-value">0</span></span>
+                    </button>
                 </div>
                 <div class="mini-space-map" id="mini-space-map"></div>
                 <div class="space-stats" id="space-stats-sidebar">
@@ -251,6 +259,8 @@
                 <span class="upgrades-title">Upgrades</span>
                 <div class="upgrades-container-center" id="upgrades-container"></div>
             </div>
+            <!-- Liste des pièces de fusée (achats uniques) - colonne verticale à gauche -->
+            <div class="rocket-parts-shop" id="rocket-parts-shop"></div>
             <div class="center-content" style="position: relative; width: 100%; height: calc(100% - 56px);">
                 <!-- CONSTRUCTION SCENE 100x100 -->
                 <div class="construction-scene-100x100" id="construction-scene" style="position: relative; width: 100%; height: 100%;">
@@ -285,7 +295,7 @@
                 <div class="medal" id="medal" onclick="addScore(1)" style="position: absolute; right: 5%; top: 25%; transform: translateY(-50%) scale(1.1);">
                     <div class="medal-emoji">🚀</div>
                 </div>
-                
+
                 <button class="launch-button" id="launch-button" onclick="launchRocket()" title="Lancer la fusée">
                     <span class="launch-button-icon">🚀</span>
                     <span class="launch-button-text">LANCER LA FUSÉE</span>
@@ -311,6 +321,21 @@
                 </div>
             </div>
             <div class="buildings-list" id="buildings-list"></div>
+        </div>
+    </div>
+
+    <!-- ATELIER GALACTIQUE MODAL -->
+    <div class="modal" id="galactic-shop-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✨ Atelier Galactique</h2>
+                <div class="stardust-display">✨ <span id="stardust-value-2">0</span></div>
+                <span class="close-button" onclick="toggleGalacticShop()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="galactic-intro">Dépense ta Poussière d'Étoiles dans des améliorations permanentes. Elles ne se reset jamais au lancement.</div>
+                <div class="galactic-shop-list" id="galactic-shop-list"></div>
+            </div>
         </div>
     </div>
 

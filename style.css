@@ -154,6 +154,23 @@ body {
     height: 100%;
     justify-content: center;
 }
+.stardust-display {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    background: rgba(168, 85, 247, 0.18);
+    border: 1px solid #a855f7;
+    border-radius: var(--radius);
+    color: #e9d5ff;
+    font-weight: 700;
+    font-size: 0.95rem;
+    white-space: nowrap;
+}
+.stardust-display span {
+    color: #c4b5fd;
+    min-width: 1ch;
+}
 .control-button {
     width: 40px; height: 40px;
     border: none;
@@ -640,8 +657,9 @@ body {
     opacity: 1;
 }
 /* Building blur effect for not purchased buildings */
-.building-item.not-purchased {
-    opacity: 0.5;
+.building-item.not-purchased .building-left,
+.building-item.not-purchased .building-center {
+    opacity: 0.6;
     filter: blur(2px);
 }
 /* Styles for random bonuses */
@@ -696,6 +714,8 @@ body {
     .counter { font-size: 1.1rem; }
     .building-item { min-height: 45px; padding: 8px; }
     .building-name { font-size: 0.85rem; }
+    .rocket-parts-shop { width: 140px; }
+    .galactic-shop-btn { font-size: 0.68rem; padding: 6px 8px; }
     .building-item button {
         width: 100%; padding: 6px 10px; font-size: 0.8rem; 
     }
@@ -902,6 +922,9 @@ body {
 .space-planet.current .planet-name {
     color: var(--accent-light);
 }
+.space-planet.origin .planet-name {
+    color: #ffffff;
+}
 .space-planet.hidden .planet-unknown {
     border-radius: 50%;
     background: #000;
@@ -1031,11 +1054,46 @@ body {
 }
 .left-panel h3 {
     color: var(--text);
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     font-size: 1.1rem;
     text-align: center;
     border-bottom: 2px solid var(--primary-light);
     padding-bottom: 10px;
+}
+.galactic-shop-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    padding: 6px 10px;
+    background: rgba(168, 85, 247, 0.1);
+    color: #c4b5fd;
+    border: 1px solid #a855f7;
+    border-radius: var(--radius);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+.galactic-shop-btn:hover {
+    background: rgba(168, 85, 247, 0.25);
+    box-shadow: 0 0 12px rgba(168, 85, 247, 0.4);
+}
+.galactic-shop-label {
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+.galactic-shop-stardust {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #e9d5ff;
+}
+.galactic-shop-stardust span {
+    color: #c4b5fd;
 }
 .space-progress-container {
     display: flex;
@@ -1043,20 +1101,24 @@ body {
     gap: 15px;
 }
 .space-progress-header {
-    text-align: center;
+    display: flex;
+    align-items: stretch;
+    gap: 8px;
 }
 .current-planet-display {
-    font-size: 1.1rem;
+    flex: 1;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--accent-light);
     background: rgba(245, 158, 11, 0.1);
-    padding: 8px 12px;
+    padding: 6px 10px;
     border-radius: var(--radius);
     border: 1px solid var(--accent);
+    text-align: center;
 }
 /* Mini Space Map */
 .mini-space-map {
-    height: 120px;
+    height: 127px;
     background: radial-gradient(ellipse at center, #0a0a2a 0%, #000000 100%);
     border-radius: var(--radius);
     border: 1px solid var(--border);
@@ -1124,6 +1186,13 @@ body {
     margin-top: 5px;
     white-space: nowrap;
     text-shadow: 0 0 2px var(--text);
+}
+.mini-space-map .planet-distance {
+    font-size: 0.6rem;
+    color: var(--text-light);
+    text-align: center;
+    white-space: nowrap;
+    opacity: 0.8;
 }
 /* Space Stats */
 .space-stats {
@@ -1713,6 +1782,133 @@ body {
     cursor: not-allowed;
     box-shadow: none;
 }
+/* Cadre unique de la prochaine pièce de fusée à acheter */
+.rocket-parts-shop {
+    position: absolute;
+    top: var(--top-height);
+    left: 0;
+    bottom: 0;
+    width: 190px;
+    display: flex;
+    flex-direction: column;
+    padding: 10px;
+    z-index: 90;
+}
+.rocket-part-frame {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 10px;
+    background: var(--secondary-light);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    transition: all 0.2s;
+}
+.rocket-part-frame.locked {
+    opacity: 0.7;
+}
+.rocket-part-frame.complete {
+    border-color: #10b981;
+    background: var(--secondary-light);
+    box-shadow: inset 0 0 0 100px rgba(16, 185, 129, 0.15);
+}
+.rocket-part-frame-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--accent-light);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.rocket-part-frame-complete {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #34d399;
+    text-align: center;
+    padding: 10px 0;
+}
+.rocket-part-left {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 60px;
+    height: 60px;
+}
+.rocket-part-icon {
+    width: 56px;
+    height: 56px;
+    object-fit: contain;
+    opacity: 0.85;
+    pointer-events: none;
+    display: block;
+}
+.rocket-part-icon-placeholder {
+    display: block;
+    width: 56px;
+    height: 56px;
+    border-radius: var(--radius);
+    background: var(--secondary);
+}
+.rocket-part-info {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 3px;
+    text-align: center;
+}
+.rocket-part-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+}
+.rocket-part-cost {
+    font-size: 0.72rem;
+    color: var(--accent-light);
+}
+.rocket-part-btn {
+    width: 100%;
+    padding: 8px 12px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 0.78rem;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+.rocket-part-btn:hover:not(:disabled) {
+    background: var(--primary-light);
+}
+.rocket-part-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.rocket-part-status {
+    font-size: 0.65rem;
+    color: #10b981;
+    font-weight: 600;
+}
+.rocket-part-btn {
+    margin-top: 2px;
+    padding: 3px 8px;
+    border: none;
+    border-radius: 6px;
+    background: var(--primary);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+.rocket-part-btn:hover:not(:disabled) {
+    background: var(--primary-light);
+}
+.rocket-part-btn:disabled {
+    background: #475569;
+    cursor: not-allowed;
+}
 .launch-button-icon {
     font-size: 1.2rem;
 }
@@ -2165,4 +2361,168 @@ body {
 }
 .cc-back-btn:hover {
     background: rgba(59, 130, 246, 0.4);
+}
+
+/* ATELIER GALACTIQUE - Arbre d'améliorations */
+#galactic-shop-modal.modal {
+    width: calc(55% + 20px);
+    max-width: calc(55% + 20px);
+    top: var(--top-height);
+    left: 50%;
+    transform: translateX(-50%);
+    height: calc(100vh - var(--top-height));
+    max-height: calc(100vh - var(--top-height));
+}
+#galactic-shop-modal .modal-content {
+    background: linear-gradient(135deg, var(--bg-panel), var(--secondary-light));
+    border: 2px solid #a855f7;
+    box-shadow: 0 0 30px rgba(168, 85, 247, 0.3);
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+}
+#galactic-shop-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    max-height: none;
+}
+.galactic-intro {
+    text-align: center;
+    color: var(--text-light);
+    font-size: 0.85rem;
+    margin-bottom: 16px;
+    padding: 10px;
+    background: rgba(168, 85, 247, 0.08);
+    border-radius: var(--radius);
+    flex-shrink: 0;
+}
+.galactic-shop-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px;
+    flex: 1;
+}
+.galactic-branch {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.galactic-branch-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(255,255,255,0.05);
+    border-radius: var(--radius);
+    border-left: 4px solid var(--branch-color);
+    flex-shrink: 0;
+}
+.galactic-branch-icon {
+    font-size: 1.2rem;
+}
+.galactic-branch-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--branch-color);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+.galactic-tree {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 10px;
+}
+.galactic-node {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 12px;
+    background: rgba(15, 23, 42, 0.7);
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius);
+    border-left: 3px solid var(--branch-color);
+    transition: all 0.2s;
+}
+.galactic-node:hover:not(.locked) {
+    background: rgba(30, 41, 59, 0.9);
+    border-color: var(--branch-color);
+    box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+.galactic-node.maxed {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+.galactic-node.locked {
+    opacity: 0.45;
+    filter: grayscale(0.5);
+}
+.galactic-node.too-expensive {
+    opacity: 0.7;
+}
+.galactic-node-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+.galactic-node-name {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--text);
+}
+.galactic-node-max {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #fbbf24;
+    background: rgba(251, 191, 36, 0.2);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+.galactic-node-desc {
+    font-size: 0.72rem;
+    color: var(--text-light);
+    line-height: 1.4;
+    min-height: 2.4em;
+}
+.galactic-node-bottom {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 6px;
+}
+.galactic-node-level {
+    font-size: 0.7rem;
+    color: #a855f7;
+    font-weight: 600;
+    white-space: nowrap;
+}
+.galactic-req {
+    font-size: 0.65rem;
+    color: var(--text-dark);
+    font-style: italic;
+    text-align: right;
+}
+.galactic-btn {
+    padding: 6px 12px;
+    border: none;
+    border-radius: var(--radius);
+    background: #a855f7;
+    color: white;
+    font-weight: 700;
+    font-size: 0.78rem;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.2s;
+}
+.galactic-btn:hover:not(:disabled) {
+    background: #9333ea;
+    transform: scale(1.05);
+}
+.galactic-btn:disabled {
+    background: #475569;
+    cursor: not-allowed;
+    opacity: 0.6;
 }
