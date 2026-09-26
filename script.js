@@ -2999,74 +2999,91 @@ function spawnRandomBonus(shower) {
     bonusElement.onclick = () => {
         if (bonusElement.dataset.collected === '1') return;
         bonusElement.dataset.collected = '1';
+        // Le timeout de fin de course est coupe des le clic : il ne doit pas
+        // retirer la comete pendant que le missile est en vol.
         clearTimeout(timeout);
-        clearInterval(trailInterval);
-        // IMPORTANT : lire la position AVANT de couper la transition, sinon
-        // l'annulation de la transition teleporte la comete a sa position
-        // d'arrivee (hors ecran) et le missile frappe dans le vide.
-        const frozenRect = bonusElement.getBoundingClientRect();
-        const contRect = document.getElementById('random-bonuses').getBoundingClientRect();
-        bonusElement.classList.add('locked');
-        bonusElement.style.transition = 'none';
-        bonusElement.style.left = (frozenRect.left - contRect.left) + 'px';
-        bonusElement.style.top = (frozenRect.top - contRect.top) + 'px';
+        // Interception en vol : la comete NE S'ARRETE PAS, elle continue sa
+        // transition. Le missile calcule un point de rendez-vous sur sa
+        // trajectoire future et la detruit en plein vol.
         interceptCometWithMissile(bonusElement, () => {
-        bonusElement.classList.add('clicked');
-        clickedBonusesCount++;
-
-        if (bonus.id === "meteor") {
-            const instantProduction = partsPerSecond * (shower ? 5 : 10);
-            score += instantProduction;
-            partsSinceLaunch += instantProduction;
-            showToast(`\u2705 ${t(bonus.name)}: +${formatNumber(instantProduction)} ${t("Parts")}!`);
-        } 
-        else if (bonus.id === "flare") {
-            activeRandomBonuses.push({
-                id: bonus.id,
-                effect: bonus.effect,
-                multiplier: bonus.multiplier,
-                endTime: Date.now() + bonus.duration
-            });
-            rebuildAutoMultipliers();
-            showToast(`\u2705 ${t(bonus.name)}: ×${bonus.multiplier} ${t("Parts")}/s ${t("for")} ${bonus.duration/1000}s`);
-
-            setTimeout(() => {
-                activeRandomBonuses = activeRandomBonuses.filter(b => b.id !== bonus.id);
+            // Impact : la comete disparait pile au point de rendez-vous, remplacee
+            // par l'explosion. On fige sa position ACQUISE (pas de teleportation,
+            // la transition est coupee sur place), puis fondu de sortie.
+            clearInterval(trailInterval);
+            const impactRect = bonusElement.getBoundingClientRect();
+            const contRect = document.getElementById('random-bonuses').getBoundingClientRect();
+            bonusElement.style.transition = 'none';
+            bonusElement.style.left = (impactRect.left - contRect.left) + 'px';
+            bonusElement.style.top = (impactRect.top - contRect.top) + 'px';
+            bonusElement.classList.add('clicked');
+            clickedBonusesCount++;
+            if (bonus.id === "meteor") {
+                const instantProduction = partsPerSecond * (shower ? 5 : 10);
+                score += instantProduction;
+                partsSinceLaunch += instantProduction;
+                showToast(`\u2705 ${t(bonus.name)}: +${formatNumber(instantProduction)} ${t("Parts")}!`);
+            }
+            else if (bonus.id === "flare") {
+                activeRandomBonuses.push({
+                    id: bonus.id,
+                    effect: bonus.effect,
+                    multiplier: bonus.multiplier,
+                    endTime: Date.now() + bonus.duration
+                });
                 rebuildAutoMultipliers();
-                updateDisplay();
-                showToast(`\u23f0 ${t(bonus.name)} ${t("expir\u00e9")}`);
-            }, bonus.duration);
-        }
-
-        setTimeout(() => bonusElement.remove(), 500);
-        checkTrophies();
-        });
+                showToast(`\u2705 ${t(bonus.name)}: \u00d7${bonus.multiplier} ${t("Parts")}/s ${t("for")} ${bonus.duration / 1000}s`);
+                setTimeout(() => {
+                    activeRandomBonuses = activeRandomBonuses.filter(b => b.id !== bonus.id);
+                    rebuildAutoMultipliers();
+                    updateDisplay();
+                    showToast(`\u23f0 ${t(bonus.name)} ${t("expir\u00e9")}`);
+                }, bonus.duration);
+            }
+            setTimeout(() => bonusElement.remove(), 500);
+            checkTrophies();
+        }, { startX, startY, endX, endY, duration });
     };
 }
 // Missile d'interception : quand le joueur clique sur une comète, un missile
 // part du bord de l'écran et la percute en trajectoire perpendiculaire à la
 // sienne. Vol très rapide (180-320 ms), puis explosion et destruction.
-function interceptCometWithMissile(cometEl, onDestroy) {
+// Interception en vol : la comete NE S'ARRETE PAS. Le missile calcule
+// un point de rendez-vous sur la trajectoire future de la comete et
+// s'y crash pile au moment ou elle y passe.
+function interceptCometWithMissile(cometEl, onDestroy, opts) {
     const cometRect = cometEl.getBoundingClientRect();
-    const cx = cometRect.left + cometRect.width / 2;
-    const cy = cometRect.top + cometRect.height / 2;
-    // La comète descend en diagonale à 45° : le missile arrive sur l'autre
-    // diagonale (montante), côté opposé à son sens de vol, exactement à 90°.
+    // Nucleau reel de la comete via les variables CSS --nx/--ny (le sprite est
+    // horizontal avec queue integree, le noyau n'est PAS au centre du canvas).
+    const cs = getComputedStyle(cometEl);
+    const nx = parseFloat(cs.getPropertyValue('--nx')) || 90;
+    const ny = parseFloat(cs.getPropertyValue('--ny')) || 90;
+    const cx = cometRect.left + nx;
+    const cy = cometRect.top + ny;
     const goRight = !cometEl.classList.contains('reverse');
     const fromLeft = goRight;
-    // Départ au bord de l'écran : on descend la diagonale perpendiculaire
-    // passant par la comète jusqu'à la frontière de l'écran (bas ou côté
-    // opposé à son sens de vol). |dx| = |dy| garantit l'angle droit, et la
-    // distance maximale laisse le temps de voir le missile arriver.
+    // Vecteur vitesse de la comete (px/ms) sur sa trajectoire lineaire.
+    const vTotal = opts ? opts.duration : 6000;
+    const vcx = opts ? (opts.endX - opts.startX) / vTotal : 0;
+    const vcy = opts ? (opts.endY - opts.startY) / vTotal : 0;
+    // Depart du missile : diagonale perpendiculaire au vol de la comete,
+    // depuis le bord de l'ecran (bas ou cote oppose a son sens de vol).
     const sBottom = window.innerHeight - cy;
     const sSide = fromLeft ? cx : (window.innerWidth - cx);
     const reach = Math.max(60, Math.min(sBottom, sSide)) + 40;
     const launchY = cy + reach;
     const launchXadj = cx + (fromLeft ? -reach : reach);
-    let vx = cx - launchXadj;
-    let vy = cy - launchY;
-    const dist = Math.hypot(vx, vy);
-    const angle = Math.atan2(vy, vx);
+    // Convergence du point de rendez-vous : la comete avance pendant le vol
+    // du missile, donc on reitere (temps de vol <-> position future) jusqu'a
+    // ce que le missile arrive au point pile au moment ou elle y passe.
+    let flightMs = 320;
+    let tx = cx, ty = cy;
+    for (let i = 0; i < 3; i++) {
+        tx = cx + vcx * flightMs;
+        ty = cy + vcy * flightMs;
+        const d = Math.hypot(tx - launchXadj, ty - launchY);
+        flightMs = Math.max(240, Math.min(600, d / 2.2));
+    }
+    const angle = Math.atan2(ty - launchY, tx - launchXadj);
     const missile = document.createElement('div');
     missile.className = 'comet-missile';
     missile.innerHTML = '<img src="images/effects/missile.png" alt="">';
@@ -3078,18 +3095,17 @@ function interceptCometWithMissile(cometEl, onDestroy) {
     missile.style.top = (launchY - mH / 2) + 'px';
     missile.style.transform = `rotate(${angle}rad)`;
     // Vol rapide mais lisible : borné entre 240 et 600 ms selon la distance.
-    const duration = Math.max(240, Math.min(600, dist / 2.2));
     requestAnimationFrame(() => {
-        missile.style.transition = `left ${duration}ms linear, top ${duration}ms linear`;
-        missile.style.left = (cx - mW / 2) + 'px';
-        missile.style.top = (cy - mH / 2) + 'px';
+        missile.style.transition = `left ${flightMs}ms linear, top ${flightMs}ms linear`;
+        missile.style.left = (tx - mW / 2) + 'px';
+        missile.style.top = (ty - mH / 2) + 'px';
     });
     setTimeout(() => {
         if (!missile.isConnected) return;
         missile.remove();
-        spawnCometExplosion(cx, cy);
+        spawnCometExplosion(tx, ty);
         onDestroy();
-    }, duration + 20);
+    }, flightMs + 20);
 }
 // Explosion de la comète à l'impact : lueur, flash blanc, boule de feu,
 // ondes de choc, gerbe d'étincelles et fumée. Chaque couche est un div

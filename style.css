@@ -823,14 +823,6 @@ body {
 .random-bonus:hover {
     transform: none !important;
 }
-/* Comète verrouillée : en attente du missile, elle stoppe net */
-.random-bonus.locked .comet-img {
-    animation: cometLockedPulse 0.18s ease-in-out infinite alternate;
-}
-@keyframes cometLockedPulse {
-    from { filter: brightness(1); }
-    to   { filter: brightness(1.6) drop-shadow(0 0 14px rgba(255, 200, 80, 0.9)); }
-}
 /* Missile d'interception : sprite PNG du joueur, bande centrale horizontale
    (nez a gauche, flamme a droite). Le conteneur est oriente par le JS selon
    l'angle de vol ; l'image est retournee de 180° pour aligner le nez sur
