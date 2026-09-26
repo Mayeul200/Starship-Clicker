@@ -2941,7 +2941,15 @@ function spawnRandomBonus(shower) {
     const bonusElement = document.createElement('div');
     bonusElement.className = `random-bonus comet ${bonus.colorClass}` + (shower ? ' shower' : '');
     if (!goRight) bonusElement.classList.add('reverse');
-    bonusElement.innerHTML = '<img src="images/effects/com\u00e8te.png" class="comet-img" alt="Comete">';
+    // Structure detaillee inspiree des vraies cometes :
+    // - chevelure (coma) : halo diffus autour du noyau
+    // - queue de plasma continue attachee derriere le noyau, orientee
+    //   dans l'axe oppose au vol
+    // - queue de poussiere : particules qui derivent vers l'arriere
+    bonusElement.innerHTML = '<img src="images/effects/com\u00e8te.png" class="comet-img" alt="Comete">'
+        + '<div class="comet-coma"></div>'
+        + '<div class="comet-tail-plasma"></div>'
+        + '<div class="comet-tail-dust"></div>';
     bonusElement.style.left = `${startX}px`;
     bonusElement.style.top = `${startY}px`;
 
@@ -2954,33 +2962,33 @@ function spawnRandomBonus(shower) {
         bonusElement.style.top = `${endY}px`;
     });
 
-    // Trainee fluide : petites particules frequentes a vie courte, aux
-    // positions interpolees entre deux ticks d'animation pour eviter
-    // l'effet "chapelet de cercles" de l'ancienne version.
-    const TRAIL_INTERVAL_MS = 24;
-    const TRAIL_LIFE_MS = 420;
-    let lastTrailPos = null;
+    // Queue de poussiere : particules frequentes a vie longue, qui
+    // DERIVENT vers l'arriere du noyau (rejetees dans l'axe oppose au
+    // vol) et s'ecartent legerement sur les cotes -- comme la queue
+    // reelle d'une comete, courbee et diffuse, pas un chapelet de
+    // cercles fixes.
+    const TRAIL_INTERVAL_MS = 16;
+    const TRAIL_LIFE_MS = 900;
+    const dirX = goRight ? 1 : -1;
     const trailInterval = setInterval(() => {
         const rect = bonusElement.getBoundingClientRect();
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
-        const prev = lastTrailPos || { x: cx, y: cy };
-        // 2 particules par tick, interpolees entre la position precedente
-        // et l'actuelle pour une trainee continue.
-        for (let i = 1; i <= 2; i++) {
-            const f = i / 2;
+        // 2 particules par tick : une coeur brillant, une poussiere
+        for (let i = 0; i < 2; i++) {
             const trail = document.createElement('div');
-            trail.className = 'comet-trail';
-            trail.style.left = `${prev.x + (cx - prev.x) * f}px`;
-            trail.style.top = `${prev.y + (cy - prev.y) * f}px`;
+            trail.className = 'comet-trail' + (i === 0 ? ' core' : ' dust');
+            trail.style.left = `${cx}px`;
+            trail.style.top = `${cy}px`;
             document.body.appendChild(trail);
+            const drift = 40 + Math.random() * 70;   // poussee vers l'arriere
+            const spread = (Math.random() * 2 - 1) * 26; // ecart lateral
             requestAnimationFrame(() => {
                 trail.style.opacity = '0';
-                trail.style.transform = `translate(-50%, -50%) scale(0.35)`;
+                trail.style.transform = `translate(-50%, -50%) translate(${-dirX * drift + spread * 0.4}px, ${-drift * 0.72 + spread * 0.6}px) scale(0.2)`;
             });
             setTimeout(() => trail.remove(), TRAIL_LIFE_MS);
         }
-        lastTrailPos = { x: cx, y: cy };
     }, TRAIL_INTERVAL_MS);
 
     const timeout = setTimeout(() => {

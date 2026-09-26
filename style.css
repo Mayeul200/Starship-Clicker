@@ -712,16 +712,103 @@ body {
 .random-bonus.comet.reverse .comet-img {
     transform: rotate(135deg);
 }
+/* Chevelure (coma) : halo diffus bleute-cyan autour du noyau, anime */
+.comet-coma {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 230px;
+    height: 230px;
+    transform: translate(-50%, -50%);
+    border-radius: 50%;
+    background:
+        radial-gradient(circle at 50% 50%, rgba(200, 235, 255, 0.55) 0%, rgba(150, 200, 255, 0.28) 34%, rgba(110, 170, 250, 0.1) 58%, rgba(110, 170, 250, 0) 78%);
+    filter: blur(4px);
+    pointer-events: none;
+    animation: cometComa 0.8s ease-in-out infinite alternate;
+}
+@keyframes cometComa {
+    from { transform: translate(-50%, -50%) scale(0.92); opacity: 0.8; }
+    to   { transform: translate(-50%, -50%) scale(1.06); opacity: 1; }
+}
+/* Queue de plasma : panache continu attache derriere le noyau, oriente
+   dans l'axe oppose au vol (45 deg vers le haut-arriere), degrade
+   blanc-bleu qui s'affine, leger ondulement */
+.comet-tail-plasma {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 320px;
+    height: 46px;
+    transform-origin: 100% 50%;
+    transform: translate(0, -50%) rotate(45deg) scaleX(1);
+    border-radius: 50% 40% 40% 50% / 60% 45% 45% 60%;
+    background: linear-gradient(270deg,
+        rgba(255, 255, 255, 0.9) 0%,
+        rgba(190, 225, 255, 0.5) 22%,
+        rgba(140, 190, 255, 0.26) 50%,
+        rgba(100, 160, 250, 0.1) 74%,
+        rgba(100, 160, 250, 0) 100%);
+    filter: blur(3px);
+    pointer-events: none;
+    animation: cometPlasma 0.6s ease-in-out infinite alternate;
+}
+.random-bonus.comet.reverse .comet-tail-plasma {
+    transform: translate(0, -50%) rotate(135deg) scaleX(1);
+}
+@keyframes cometPlasma {
+    from { opacity: 0.75; filter: blur(3px) saturate(1); }
+    to   { opacity: 1; filter: blur(4px) saturate(1.25); }
+}
+/* Queue de poussiere : panache plus large, teinte dorée, courbe vers
+   le haut-arriere (la queue de poussiere est inclinee par rapport a
+   celle de plasma, comme sur les vraies cometes) */
+.comet-tail-dust {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 260px;
+    height: 66px;
+    transform-origin: 100% 50%;
+    transform: translate(0, -50%) rotate(30deg);
+    border-radius: 50% 45% 45% 50% / 65% 50% 50% 65%;
+    background: linear-gradient(270deg,
+        rgba(255, 235, 190, 0.42) 0%,
+        rgba(250, 210, 150, 0.22) 34%,
+        rgba(230, 180, 120, 0.1) 62%,
+        rgba(230, 180, 120, 0) 100%);
+    filter: blur(5px);
+    pointer-events: none;
+    animation: cometDust 0.7s ease-in-out infinite alternate;
+}
+.random-bonus.comet.reverse .comet-tail-dust {
+    transform: translate(0, -50%) rotate(150deg);
+}
+@keyframes cometDust {
+    from { opacity: 0.7; }
+    to   { opacity: 0.95; }
+}
+/* Particules de queue : coeur brillant et poussiere, vie longue,
+   derive vers l'arriere pilotee en JS */
 .comet-trail {
     position: fixed;
-    width: 18px;
-    height: 18px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,0.85) 0%, rgba(255,255,255,0.25) 55%, transparent 100%);
     pointer-events: none;
     z-index: 55;
     transform: translate(-50%, -50%);
-    transition: opacity 420ms linear, transform 420ms ease-out;
+    transition: opacity 900ms linear, transform 900ms ease-out;
+}
+.comet-trail.core {
+    width: 20px;
+    height: 20px;
+    background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(200,230,255,0.45) 45%, transparent 75%);
+}
+.comet-trail.dust {
+    width: 11px;
+    height: 11px;
+    background: radial-gradient(circle, rgba(255,225,180,0.7) 0%, rgba(240,190,130,0.28) 55%, transparent 80%);
 }
 .random-bonus:hover {
     transform: none !important;
