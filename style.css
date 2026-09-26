@@ -701,6 +701,16 @@ body {
 }
 .random-bonus.comet {
     transition: none;
+    /* Position REELLE du noyau dans le conteneur (le sprite comète.png
+       est horizontal, noyau a ~85% de la largeur, queue integree ;
+       rendu contain + rotation 45deg place le noyau ici, pas au centre
+       du canvas). Tous les effets s'ancrent sur ces coordonnees. */
+    --nx: 134px;
+    --ny: 135px;
+}
+.random-bonus.comet.reverse {
+    --nx: 45px;
+    --ny: 134px;
 }
 .comet-img {
     width: 180px;
@@ -715,8 +725,8 @@ body {
 /* Chevelure (coma) : halo diffus bleute-cyan autour du noyau, anime */
 .comet-coma {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: var(--nx);
+    top: var(--ny);
     width: 230px;
     height: 230px;
     transform: translate(-50%, -50%);
@@ -736,12 +746,12 @@ body {
    blanc-bleu qui s'affine, leger ondulement */
 .comet-tail-plasma {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: calc(var(--nx) - 320px);
+    top: calc(var(--ny) - 23px);
     width: 320px;
     height: 46px;
     transform-origin: 100% 50%;
-    transform: translate(0, -50%) rotate(45deg) scaleX(1);
+    transform: rotate(45deg);
     border-radius: 50% 40% 40% 50% / 60% 45% 45% 60%;
     background: linear-gradient(270deg,
         rgba(255, 255, 255, 0.9) 0%,
@@ -754,7 +764,7 @@ body {
     animation: cometPlasma 0.6s ease-in-out infinite alternate;
 }
 .random-bonus.comet.reverse .comet-tail-plasma {
-    transform: translate(0, -50%) rotate(135deg) scaleX(1);
+    transform: rotate(135deg);
 }
 @keyframes cometPlasma {
     from { opacity: 0.75; filter: blur(3px) saturate(1); }
@@ -765,12 +775,12 @@ body {
    celle de plasma, comme sur les vraies cometes) */
 .comet-tail-dust {
     position: absolute;
-    left: 50%;
-    top: 50%;
+    left: calc(var(--nx) - 260px);
+    top: calc(var(--ny) - 33px);
     width: 260px;
     height: 66px;
     transform-origin: 100% 50%;
-    transform: translate(0, -50%) rotate(30deg);
+    transform: rotate(30deg);
     border-radius: 50% 45% 45% 50% / 65% 50% 50% 65%;
     background: linear-gradient(270deg,
         rgba(255, 235, 190, 0.42) 0%,
@@ -782,7 +792,7 @@ body {
     animation: cometDust 0.7s ease-in-out infinite alternate;
 }
 .random-bonus.comet.reverse .comet-tail-dust {
-    transform: translate(0, -50%) rotate(150deg);
+    transform: rotate(150deg);
 }
 @keyframes cometDust {
     from { opacity: 0.7; }
